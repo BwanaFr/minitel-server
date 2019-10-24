@@ -1,14 +1,10 @@
 forms:
-    - location: [17,17]
-      lenght : 10
-      text : 1
+    - location: [17,12]
+      lenght : 29
       actions:
-        -   value: "1"
+        -   value: "hello"
             page: "hello"
-        -   value: "2"
+        -   value: "goodbye"
             page: "goodbye"
-        -   value: "3"
+        -   value: "boss"
             page: "boss"
-    - location: [18,17]
-      lenght : 10
-      text : coucou

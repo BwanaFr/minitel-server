@@ -28,7 +28,7 @@ class MinitelPage(object):
             for dirName in next(os.walk(constant.PAGES_LOCATION))[1]:
                 logging.info('Found page {folderName}'.format(folderName=dirName))
                 MinitelPage.pages[dirName] = MinitelPage(dirName)
-        return MinitelPage.pages[name];
+        return MinitelPage(name) #MinitelPage.pages[name];
 
 
     def __init__(self, name):
