@@ -1,0 +1,14 @@
+forms:
+    - location: [17,17]
+      lenght : 10
+      text : 1
+      actions:
+        -   value: "1"
+            page: "hello"
+        -   value: "2"
+            page: "goodbye"
+        -   value: "3"
+            page: "boss"
+    - location: [18,17]
+      lenght : 10
+      text : coucou
