@@ -132,9 +132,8 @@ class MinitelDefaultHandler(object):
                                     break                
                 i = i + 1
                 if nextpage is not None:
+                    newcontext = MinitelPageContext(self.context, data, nextpage)
                     break
-            
-            newcontext = MinitelPageContext(self.context, data, nextpage)    
         else:
             userinput = await self.minitel.waituserinput()
             logger.info('Got: {minitel},{code}'.format(minitel=userinput[0], code=userinput[1]))

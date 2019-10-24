@@ -6,6 +6,7 @@ Created on 18 Oct 2019
 import asyncio
 import logging
 import importlib
+from time import sleep
 
 from asyncio import IncompleteReadError
 from builtins import object
@@ -14,6 +15,7 @@ from MinitelServer.page import MinitelPage
 from MinitelServer.page import MinitelDefaultHandler
 from MinitelServer.page import MinitelPageContext
 from MinitelServer.exceptions import MinitelDisconnected
+from numpy import character
 
 logger = logging.getLogger('server')
 
@@ -123,8 +125,11 @@ class MinitelConnection(object):
         converted_value = bytes([
             even_parity(character) for character in value
         ])
-        self.writer.write(converted_value)
-        self.writer.drain()
+        for character in converted_value:
+            self.writer.write(bytes([character]))
+            self.writer.drain()
+            sleep(0.0083)
+        
         
 class MinitelSession(object):
     """ A user session for handling pages flow """
