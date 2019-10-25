@@ -9,6 +9,7 @@ import os
 import yaml
 import re
 from . import constant
+from MinitelServer.pynitel import Pynitel
 
 logger = logging.getLogger('page')
 
@@ -17,41 +18,44 @@ class MinitelPage(object):
     '''
     Represents a minitel page template
     '''
-    pages = {}
     
     @staticmethod
-    def get_page(name):
-        "Get a page from the collection"
-        if len(MinitelPage.pages) == 0:
-            logging.info('Getting list of pages')
-            # Gets all pages from folders
-            for dirName in next(os.walk(constant.PAGES_LOCATION))[1]:
-                logging.info('Found page {folderName}'.format(folderName=dirName))
-                MinitelPage.pages[dirName] = MinitelPage(dirName)
-        return MinitelPage(name) #MinitelPage.pages[name];
+    def get_page(service, name):
+        return MinitelPage(service, name) #MinitelPage.pages[name];
 
 
-    def __init__(self, name):
+    def __init__(self, service, name):
         '''
         Constructor
         '''
+        self.service = service
         self.name = name
         self.forms = None
         self.handler = None
         #Load page configuration from its yaml
-        pageFile = os.path.join(constant.PAGES_LOCATION, name, name + '.yaml');
-        with open(pageFile) as f:
-            data = yaml.load(f, Loader=yaml.FullLoader)
-            if data is None:
-                return
-            #get list of forms
-            
-            self.forms = data.get('forms', None)
-            self.handler = data.get('handler', None)
-    
+        pageFile = os.path.join(constant.PAGES_LOCATION, str(self.service), self.name, self.name + '.yaml')
+        try:
+            with open(pageFile) as f:
+                data = yaml.load(f, Loader=yaml.FullLoader)
+                if data is None:
+                    return
+                #get list of forms            
+                self.forms = data.get('forms', None)
+                self.handler = data.get('handler', None)
+        except FileNotFoundError:
+            pass
+        
     def get_page_data(self):
-        """ Get page VTX data """
-        return os.path.join(constant.PAGES_LOCATION, self.name, self.name + '.vdt');
+        """ Get page VTX data file """
+        filepath = os.path.join(constant.PAGES_LOCATION, str(self.service), self.name, self.name + '.vdt')
+        if os.path.exists(filepath):
+            return filepath
+        
+        filepath = os.path.join(constant.PAGES_LOCATION, str(self.service), self.name, self.name + '.vtx')
+        if os.path.exists(filepath):
+            return filepath
+        
+        return None
     
     def get_handler(self):
         """" Gets custom handler """
@@ -79,7 +83,7 @@ class MinitelPageContext(object):
  
 class MinitelDefaultHandler(object):
     '''
-    Default page handler
+    Default page handler for simple pages
     '''
     
     def __init__(self, minitel, context):
@@ -99,8 +103,8 @@ class MinitelDefaultHandler(object):
             for value in self.forms:
                 row = value['location'][0]
                 col = value['location'][1]
-                lenght = value.get('lenght', 10)
-                color = value.get('color', self.minitel.blanc)
+                lenght = value.get('lenght', 0)
+                color = value.get('color', Pynitel.BLANC)
                 text = str(value.get('text', ''))
                 self.minitel.zone(row, col, lenght, text, color)
         #Send the page content
@@ -128,7 +132,7 @@ class MinitelDefaultHandler(object):
                             if re.match(valuepattern, zonetext):
                                 #value match. what to do now?
                                 if 'page' in action:
-                                    nextpage = MinitelPage.get_page(str(action['page']))
+                                    nextpage = MinitelPage.get_page(self.context.current_page.service, str(action['page']))
                                     break                
                 i = i + 1
                 if nextpage is not None:
@@ -137,6 +141,6 @@ class MinitelDefaultHandler(object):
         else:
             userinput = await self.minitel.waituserinput()
             logger.info('Got: {minitel},{code}'.format(minitel=userinput[0], code=userinput[1]))
-            if userinput[0] and userinput[1] == self.minitel.retour:
+            if userinput[0] and userinput[1] == Pynitel.RETOUR:
                 newcontext = self.context.previous
         return newcontext

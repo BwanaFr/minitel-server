@@ -11,6 +11,40 @@ logger = logging.getLogger('pynitel')
 class Pynitel:
     "Classe de gestion des entrée/sortie vidéotex avec un Minitel"
 
+    # constantes de couleurs
+    NOIR = 0
+    ROUGE = 1
+    VERT = 2
+    JAUNE = 3
+    BLEU = 4
+    MAGENTA = 5
+    CYAN = 6
+    BLANC = 7
+
+    # constantes des touches de fonction du Minitel
+    # en mode Vidéotex ou Mixte
+    ENVOI = 1
+    RETOUR = 2
+    REPETITION = 3
+    GUIDE = 4
+    ANNULATION = 5
+    SOMMAIRE = 6
+    CORRECTION = 7
+    SUITE = 8
+    CONNEXIONFIN = 9
+
+    # constantes des séquences protocole
+    ACK_PROTO = '\x1b'
+    PRO1 = '\x39'
+    PRO2 = '\x3a'
+    PRO3 = '\x3b'
+    SEP = '\x13'
+    
+    INVERSE = '\x5D'
+    NO_INVERSE = '\x5C'
+    UNDERLINE = '\x5A'
+    NO_UNDERLINE = '\x59'
+
     def __init__(self, conn):
         self.ecrans = {'last': None}
         self.conn = conn
@@ -20,41 +54,15 @@ class Pynitel:
         self.zones = []
         self.zonenumber = 0
 
-        # constantes de couleurs
-        self.noir = 0
-        self.rouge = 1
-        self.vert = 2
-        self.jaune = 3
-        self.bleu = 4
-        self.magenta = 5
-        self.cyan = 6
-        self.blanc = 7
-
-        # constantes des touches de fonction du Minitel
-        # en mode Vidéotex ou Mixte
-        self.envoi = 1
-        self.retour = 2
-        self.repetition = 3
-        self.guide = 4
-        self.annulation = 5
-        self.sommaire = 6
-        self.correction = 7
-        self.suite = 8
-        self.connexionfin = 9
-
-        # constantes des séquences protocole
-        self.PRO1 = '\x1b\x39'
-        self.PRO2 = '\x1b\x3a'
-        self.PRO3 = '\x1b\x3b'
+        
 
     def wait(self):
         "Attente d'une connexion"
 
         logger.info('Waiting')
-
         # ESC reçu... on considère qu'on est connecté
         # while await self.conn.read(1) != b' ':
-         #   time.sleep(1)
+        #   time.sleep(1)
         self.conn.readUntil(b' ')
         logger.info('Connected')
 
@@ -199,10 +207,10 @@ class Pynitel:
             c = (await self.conn.read(1)).decode()
             if c == '':
                 continue
-            elif c == '\x13':  # SEP donc touche Minitel...
+            elif c == Pynitel.SEP:  # SEP donc touche Minitel...
                 c = (await self.conn.read(1)).decode()
-
-                if c == '\x45' and data != '':  # annulation
+                minitelkey = ord(c)-64
+                if minitelkey == Pynitel.ANNULATION and data != '':  # annulation
                     data = ''
                     self.sendchr(20)  # Coff
                     self.pos(ligne, colonne)
@@ -210,20 +218,20 @@ class Pynitel:
                     self.plot(caractere, longueur-len(data))
                     self.pos(ligne, colonne)
                     self.sendchr(17)  # Con
-                elif c == '\x47' and data != '':  # correction
+                elif minitelkey == Pynitel.CORRECTION and data != '':  # correction
                     self.send(chr(8)+caractere+chr(8))
                     data = data[:len(data)-1]
                 else:
-                    self.lastkey = ord(c)-64
+                    self.lastkey = minitelkey
                     self.laststar = (data != '' and data[:-1] == '*')
-                    return(data, ord(c)-64)
-            elif c == '\x1b':  # filtrage des acquittements protocole...
-                c = c + (await self.conn.read(1)).decode()
-                if c == self.PRO1:
+                    return(data, minitelkey)
+            elif c == Pynitel.ACK_PROTO:  # filtrage des acquittements protocole...
+                c = (await self.conn.read(1)).decode()
+                if c == Pynitel.PRO1:
                     await self.conn.read(1)
-                elif c == self.PRO2:
+                elif c == Pynitel.PRO2:
                     await self.conn.read(2)
-                elif c == self.PRO3:
+                elif c == Pynitel.PRO3:
                     await self.conn.read(3)
             elif c >= ' ' and len(data) >= longueur:
                 self.bip()
@@ -238,27 +246,26 @@ class Pynitel:
             c = (await self.conn.read(1)).decode()
             if c == '':
                 continue
-            elif c == '\x13':  # SEP donc touche Minitel...
+            elif c == Pynitel.SEP:  # SEP donc touche Minitel...
                 c = (await self.conn.read(1)).decode()
                 return(True, ord(c)-64)
-            elif c == '\x1b':  # filtrage des acquittements protocole...
-                c = c + (await self.conn.read(1)).decode()
-                if c == self.PRO1:
+            elif c == Pynitel.ACK_PROTO:  # filtrage des acquittements protocole...
+                c = (await self.conn.read(1)).decode()
+                if c == Pynitel.PRO1:
                     await self.conn.read(1)
-                elif c == self.PRO2:
+                elif c == Pynitel.PRO2:
                     await self.conn.read(2)
-                elif c == self.PRO3:
+                elif c == Pynitel.PRO3:
                     await self.conn.read(3)
             elif c >= ' ':
-                #echo
                 return (False, c)
 
     def inverse(self, inverse=1):
         "Passage en inverse"
         if inverse is None or inverse == 1 or inverse is True:
-            self.sendesc('\x5D')
+            self.sendesc(Pynitel.INVERSE)
         else:
-            self.sendesc('\x5C')
+            self.sendesc(Pynitel.NO_INVERSE)
 
     def locate(self, ligne, colonne):
         "Positionne le curseur"
@@ -267,9 +274,9 @@ class Pynitel:
     # lower - clavier en mode minuscule / majuscule (mode "Enseignement")
     def lower(self, islower=True):
         if islower or islower == 1:
-            self.send(self.PRO2+'\x69\x45')  # passage clavier en minuscules
+            self.send(Pynitel.ACK_PROTO + Pynitel.PRO2 +'\x69\x45')  # passage clavier en minuscules
         else:
-            self.send(self.PRO2+'\x6a\x45')  # retour clavier majuscule
+            self.send(Pynitel.ACK_PROTO + Pynitel.PRO2 +'\x6a\x45')  # retour clavier majuscule
 
     def message(self, ligne, colonne, delai, message, bip=False):
         """Affiche un message à une position donnée pendant un temps donné,
@@ -306,9 +313,9 @@ class Pynitel:
     def underline(self, souligne=True):
         "Passe en mode souligné ou normal"
         if souligne is None or souligne is True or souligne == 1:
-            self.sendesc(chr(90))
+            self.sendesc(Pynitel.UNDERLINE)
         else:
-            self.sendesc(chr(89))
+            self.sendesc(Pynitel.NO_UNDERLINE)
 
     async def waitzones(self, zone):
         "Gestion de zones de saisie"
@@ -323,7 +330,7 @@ class Pynitel:
                 self.cursor(False)
                 for z in self.zones:
                     self.pos(z['ligne'], z['colonne'])
-                    if z['couleur'] != self.blanc:
+                    if z['couleur'] != Pynitel.BLANC:
                         self.forecolor(z['couleur'])
                     self._print(z['texte'])
                 if zone < 0:
@@ -335,12 +342,12 @@ class Pynitel:
                 data=self.zones[zone-1]['texte'], caractere='.', redraw=False)
 
             # gestion des SUITE / RETOUR
-            if touche == self.suite:
+            if touche == Pynitel.SUITE:
                 if zone < len(self.zones):
                     zone = zone+1
                 else:
                     zone = 1
-            elif touche == self.retour:
+            elif touche == Pynitel.RETOUR:
                 if zone > 1:
                     zone = zone-1
                 else:
@@ -368,11 +375,11 @@ class Pynitel:
 
     def notrace(self):
         "Passe en texte souligné, à valider par un espace"
-        self.sendesc(chr(89))
+        self.sendesc(Pynitel.NO_UNDERLINE)
 
     def trace(self):
         "Fin de texte souligné, à valider par un espace"
-        self.sendesc(chr(90))
+        self.sendesc(Pynitel.UNDERLINE)
 
     def plot(self, car, nombre):
         "Affichage répété d'un caractère"

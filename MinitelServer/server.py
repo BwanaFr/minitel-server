@@ -6,7 +6,6 @@ Created on 18 Oct 2019
 import asyncio
 import logging
 import importlib
-from time import sleep
 
 from asyncio import IncompleteReadError
 from builtins import object
@@ -15,7 +14,6 @@ from MinitelServer.page import MinitelPage
 from MinitelServer.page import MinitelDefaultHandler
 from MinitelServer.page import MinitelPageContext
 from MinitelServer.exceptions import MinitelDisconnected
-from numpy import character
 
 logger = logging.getLogger('server')
 
@@ -41,19 +39,21 @@ class MinitelServer(object):
     '''
 
 
-    def __init__(self, port):
+    def __init__(self, ports):
         '''
         Constructor
         '''
-        self.port = port
+        self.ports = ports
             
     def run(self):
         """ Run the Minitel server """
         loop = asyncio.get_event_loop()
-        handler = MinitelConnection
-        coro = asyncio.start_server(
-                handler.handle_connection, port=self.port, loop=loop)
-        server = loop.run_until_complete(coro)
+        for port in self.ports:
+            handler = MinitelConnection
+            coro = asyncio.start_server(
+                    handler.handle_connection, port=port, loop=loop)
+            server = loop.run_until_complete(coro)
+            logger.info("Listening for connections on port {port}".format(port=port))
         # Serve requests until Ctrl+C is pressed
         try:
             loop.run_forever()
@@ -67,15 +67,17 @@ class MinitelServer(object):
 
         
 class MinitelConnection(object):
+    
     '''
         Connection to a TCP socket
     '''
     def __init__(self, reader, writer):
         self.reader = reader
         self.writer = writer
+        self.port = writer.get_extra_info('sockname')[1]
         peer = writer.get_extra_info('peername')
-        logger.info('Received connection from {peer[0]}:{peer[1]}'.format(
-            peer=peer))
+        logger.info('Received connection from {peer[0]}:{peer[1]} on port {port}'.format(
+            peer=peer, port=self.port))
 
     @classmethod
     async def handle_connection(cls, reader, writer):
@@ -125,12 +127,12 @@ class MinitelConnection(object):
         converted_value = bytes([
             even_parity(character) for character in value
         ])
-        for character in converted_value:
-            self.writer.write(bytes([character]))
-            self.writer.drain()
-            sleep(0.0083)
-        
-        
+        self.writer.write(converted_value)
+        #for character in converted_value:
+        #   self.writer.write(bytes([character]))
+        #    self.writer.drain()
+        #    sleep(0.0083)        
+    
 class MinitelSession(object):
     """ A user session for handling pages flow """
     
@@ -147,7 +149,7 @@ class MinitelSession(object):
             self.m.wait()
             self.m.home()
             """ Loads the root page """
-            page = MinitelPage.get_page(self.ROOT_PAGE)
+            page = MinitelPage.get_page(self.conn.port, self.ROOT_PAGE)
             self.context = MinitelPageContext(None, None, page)
             while True:
                 handler_name = self.context.current_page.get_handler()

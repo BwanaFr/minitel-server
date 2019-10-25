@@ -1,3 +1,5 @@
 .settings
 .project
 .pydevproject
+*__pycache__*
+MinitelServer/__pycache__
