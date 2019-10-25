@@ -136,8 +136,6 @@ class MinitelConnection(object):
 class MinitelSession(object):
     """ A user session for handling pages flow """
     
-    ROOT_PAGE = 'root'
-    
     def __init__(self, conn):
         self.conn = conn
         self.context = None
@@ -149,7 +147,7 @@ class MinitelSession(object):
             self.m.wait()
             self.m.home()
             """ Loads the root page """
-            page = MinitelPage.get_page(self.conn.port, self.ROOT_PAGE)
+            page = MinitelPage.get_page(self.conn.port, None)
             self.context = MinitelPageContext(None, None, page)
             while True:
                 handler_name = self.context.current_page.get_handler()

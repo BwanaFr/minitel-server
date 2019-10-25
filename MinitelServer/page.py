@@ -18,7 +18,7 @@ class MinitelPage(object):
     '''
     Represents a minitel page template
     '''
-    
+       
     @staticmethod
     def get_page(service, name):
         return MinitelPage(service, name) #MinitelPage.pages[name];
@@ -29,11 +29,22 @@ class MinitelPage(object):
         Constructor
         '''
         self.service = service
-        self.name = name
         self.forms = None
         self.handler = None
+        if name is None:
+            self.name = str(service)
+            self.fullname = self.name
+            self.pagefolder = os.path.join(constant.PAGES_LOCATION, str(self.service))
+        else:
+            tokens = name.split('.')
+            self.fullname = name
+            self.name = tokens[len(tokens)-1]            
+            self.pagefolder = os.path.join(constant.PAGES_LOCATION, str(self.service))
+            for x in range(len(tokens)):
+                self.pagefolder = os.path.join(self.pagefolder, tokens[x])
+            
         #Load page configuration from its yaml
-        pageFile = os.path.join(constant.PAGES_LOCATION, str(self.service), self.name, self.name + '.yaml')
+        pageFile = os.path.join(self.pagefolder, self.name + '.yaml')
         try:
             with open(pageFile) as f:
                 data = yaml.load(f, Loader=yaml.FullLoader)
@@ -47,11 +58,11 @@ class MinitelPage(object):
         
     def get_page_data(self):
         """ Get page VTX data file """
-        filepath = os.path.join(constant.PAGES_LOCATION, str(self.service), self.name, self.name + '.vdt')
+        filepath = os.path.join(self.pagefolder, self.name + '.vdt')
         if os.path.exists(filepath):
             return filepath
         
-        filepath = os.path.join(constant.PAGES_LOCATION, str(self.service), self.name, self.name + '.vtx')
+        filepath = os.path.join(self.pagefolder, self.name + '.vtx')
         if os.path.exists(filepath):
             return filepath
         
@@ -129,7 +140,7 @@ class MinitelDefaultHandler(object):
                     for action in value['actions']:
                         if 'value' in action:
                             valuepattern = str(action['value'])
-                            if re.match(valuepattern, zonetext):
+                            if re.match(valuepattern, zonetext, re.RegexFlag.IGNORECASE):
                                 #value match. what to do now?
                                 if 'page' in action:
                                     nextpage = MinitelPage.get_page(self.context.current_page.service, str(action['page']))
