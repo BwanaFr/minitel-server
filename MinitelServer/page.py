@@ -33,7 +33,7 @@ class MinitelPage(object):
         self.handler = None
         if name is None:
             self.name = str(service)
-            self.fullname = self.name
+            self.fullname = ''
             self.pagefolder = os.path.join(constant.PAGES_LOCATION, str(self.service))
         else:
             tokens = name.split('.')
@@ -77,7 +77,10 @@ class MinitelPage(object):
         if self.handler is None:
             return None
         else:
-            return constant.PAGES_LOCATION + '.' + self.name + '.' + self.name
+            if len(self.fullname) == 0:
+                return constant.PAGES_LOCATION + '.' + str(self.service) + '.' + self.name
+            else:
+                return constant.PAGES_LOCATION + '.' + str(self.service) + '.' + self.fullname + '.' + self.name
 
 class MinitelPageContext(object):
     '''

@@ -1,15 +1,1 @@
 handler: Handler3615
-forms:
-    - location: [17,12]
-      lenght : 29
-      actions:
-        -   value: "hello"
-            page: "hello"
-        -   value: "goodbye"
-            page: "goodbye"
-        -   value: "^boss$"
-            page: "boss"
-        -   value: "ulla"
-            page: "ulla"
-        -   value: "boss2"
-            page: "boss.boss2"

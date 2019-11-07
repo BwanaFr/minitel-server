@@ -74,3 +74,6 @@ loggers:
 
     3615page:
         level: DEBUG
+        
+    Ullapage:
+        level: DEBUG
