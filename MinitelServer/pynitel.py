@@ -191,8 +191,8 @@ class Pynitel:
         "Change la couleur de fond, à valider par un espace pour le texte"
         self.sendesc(chr(80+couleur))
 
-    async def input(self, ligne, colonne, longueur, data='',
-              caractere='.', redraw=True):
+    async def input(self, ligne, colonne, longueur, couleur=BLANC, 
+                    data='', caractere='.', redraw=True):
         "Gestion de zone de saisie"
         # affichage initial
         if redraw:
@@ -202,7 +202,8 @@ class Pynitel:
             self.plot(caractere, longueur-len(data))
         self.pos(ligne, colonne+len(data))
         self.sendchr(17)  # Con
-
+        self.forecolor(couleur)
+        
         while True:
             c = (await self.conn.read(1)).decode()
             if c == '':
@@ -285,7 +286,6 @@ class Pynitel:
             self.bip()
         self.pos(ligne, colonne)
         self._print(message)
-        self.conn.flush()
         time.sleep(delai)
         self.pos(ligne, colonne)
         self.plot(' ', len(message))
@@ -338,8 +338,9 @@ class Pynitel:
 
             # gestion de la zone de saisie courante
             (self.zones[zone-1]['texte'], touche) = await self.input(self.zones[zone-1]['ligne'],  # noqa
-                self.zones[zone-1]['colonne'], self.zones[zone-1]['longueur'],
-                data=self.zones[zone-1]['texte'], caractere='.', redraw=False)
+                self.zones[zone-1]['colonne'], self.zones[zone-1]['longueur'],                
+                data=self.zones[zone-1]['texte'],
+                couleur=self.zones[zone-1]['couleur'], caractere='.', redraw=False)
 
             # gestion des SUITE / RETOUR
             if touche == Pynitel.SUITE:
@@ -372,6 +373,18 @@ class Pynitel:
     def scale(self, taille):
         "Change la taille du texte"
         self.sendesc(chr(76+taille))
+
+    def doublehauteur(self):
+        self.sendesc('M')
+        
+    def doublelargeur(self):
+        self.sendesc('N')
+        
+    def doubletaille(self):
+        self.sendesc('O')
+    
+    def simpletaille(self):
+        self.sendesc('L')
 
     def notrace(self):
         "Passe en texte souligné, à valider par un espace"

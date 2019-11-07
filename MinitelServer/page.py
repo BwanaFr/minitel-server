@@ -77,7 +77,7 @@ class MinitelPage(object):
         if self.handler is None:
             return None
         else:
-            return constant.PAGES_LOCATION + '.' + self.name
+            return constant.PAGES_LOCATION + '.' + self.name + '.' + self.name
 
 class MinitelPageContext(object):
     '''
@@ -90,24 +90,45 @@ class MinitelPageContext(object):
         self.data = data
         self.current_page = current_page
 
-
- 
-class MinitelDefaultHandler(object):
+class MinitelPageHandler(object):
     '''
-    Default page handler for simple pages
+    Abstract page handler for custom handlers
     '''
     
     def __init__(self, minitel, context):
         self.minitel = minitel
         self.context = context
-        self.forms = None
-        
+    
     async def before_rendering(self):
+        '''
+        Called before rendering the page
+        Useful for setting forms
+        '''
+        pass
+
+    async def render(self):
+        '''
+        Send the page content to the Minitel
+        '''
         pass
     
-    async def render(self):
-        page = self.context.current_page
-        self.forms = page.forms
+    async def after_rendering(self):
+        '''
+        Called after render() to handle keyboard inputs (or redirects)
+        '''
+        return None
+
+class MinitelDefaultHandler(MinitelPageHandler):
+    '''
+    Default page handler for simple pages described in YAML
+    '''
+    
+    def __init__(self, minitel, context):
+        super().__init__(minitel, context)
+        self.page = self.context.current_page
+        self.forms = self.page.forms
+        
+    async def before_rendering(self):
         self.minitel.resetzones()
         #add all zones in the document (if any)
         if self.forms is not None:
@@ -118,15 +139,17 @@ class MinitelDefaultHandler(object):
                 color = value.get('color', Pynitel.BLANC)
                 text = str(value.get('text', ''))
                 self.minitel.zone(row, col, lenght, text, color)
+    
+    async def render(self):
         #Send the page content
-        self.minitel.drawscreen(page.get_page_data())
+        self.minitel.drawscreen(self.page.get_page_data())
                 
     async def after_rendering(self):
         newcontext = None
         if self.forms is not None:
             #Wait for zones
             zones = await self.minitel.waitzones(0)
-            logger.info('Got zone: {zone},{key}'.format(zone=zones[0], key=zones[1]))
+            logger.debug('Got zone: {zone},{key}'.format(zone=zones[0], key=zones[1]))
             i = 0
             data = []
             nextpage = None
@@ -151,7 +174,7 @@ class MinitelDefaultHandler(object):
                     break
         else:
             userinput = await self.minitel.waituserinput()
-            logger.info('Got: {minitel},{code}'.format(minitel=userinput[0], code=userinput[1]))
+            logger.debug('Got: {minitel},{code}'.format(minitel=userinput[0], code=userinput[1]))
             if userinput[0] and userinput[1] == Pynitel.RETOUR:
                 newcontext = self.context.previous
         return newcontext

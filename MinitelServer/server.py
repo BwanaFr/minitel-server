@@ -14,6 +14,8 @@ from MinitelServer.page import MinitelPage
 from MinitelServer.page import MinitelDefaultHandler
 from MinitelServer.page import MinitelPageContext
 from MinitelServer.exceptions import MinitelDisconnected
+import time
+from MinitelServer import constant
 
 logger = logging.getLogger('server')
 
@@ -68,6 +70,7 @@ class MinitelServer(object):
         
 class MinitelConnection(object):
     
+    
     '''
         Connection to a TCP socket
     '''
@@ -81,13 +84,16 @@ class MinitelConnection(object):
 
     @classmethod
     async def handle_connection(cls, reader, writer):
-        """ Generate a client connection handler """
+        """ Generate a client connection handler """        
         await cls(reader, writer).run()
         
     async def run(self):
         """ Runs the connection """
         app = MinitelSession(self)
-        await app.run();
+        try:            
+            await app.run();
+        except ConnectionAbortedError:
+            pass
         peer = self.writer.get_extra_info('peername')
         logger.info('Disconnected from {peer[0]}:{peer[1]}'.format(
             peer=peer))
@@ -127,19 +133,29 @@ class MinitelConnection(object):
         converted_value = bytes([
             even_parity(character) for character in value
         ])
-        self.writer.write(converted_value)
-        #for character in converted_value:
-        #   self.writer.write(bytes([character]))
-        #    self.writer.drain()
-        #    sleep(0.0083)        
-    
+        if constant.SIMULATE_12000_BPS:
+            for character in converted_value:
+                self.writer.write(bytes([character]))
+                self.writer.drain()
+                time.sleep(0.0083)
+        else:        
+            self.writer.write(converted_value)
+
 class MinitelSession(object):
     """ A user session for handling pages flow """
     
     def __init__(self, conn):
         self.conn = conn
         self.context = None
-        
+    
+    @staticmethod
+    def full_import(name):
+        ''' Import a module by using the full qualifier '''
+        m = __import__(name)
+        for n in name.split(".")[1:]:
+            m = getattr(m, n)
+        return m
+    
     async def run(self):
         self.m = Pynitel(self.conn)
         try:
@@ -156,9 +172,9 @@ class MinitelSession(object):
                     handler = MinitelDefaultHandler(self.m, self.context)
                 else:
                     """ Import module dynamically """
-                    module = importlib.import_module(
-                                    self.context.current_page.get_module_name())
-                    class_ = getattr(module, handler)
+                    modulename = self.context.current_page.get_module_name()
+                    module = MinitelSession.full_import(modulename)
+                    class_ = getattr(module, handler_name)
                     handler = class_(self.m, self.context)
                     
                 await handler.before_rendering()
