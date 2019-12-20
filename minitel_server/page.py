@@ -9,19 +9,20 @@ import os
 import yaml
 import re
 from . import constant
-from MinitelServer.pynitel import Pynitel
+from minitel_server.terminal import Terminal, FormInput
+from minitel_server.exceptions import UserTerminateSessionError
 
 logger = logging.getLogger('page')
 
 
-class MinitelPage(object):
+class Page(object):
     '''
     Represents a minitel page template
     '''
        
     @staticmethod
     def get_page(service, name):
-        return MinitelPage(service, name) #MinitelPage.pages[name];
+        return Page(service, name) #Page.pages[name];
 
 
     def __init__(self, service, name):
@@ -82,7 +83,7 @@ class MinitelPage(object):
             else:
                 return constant.PAGES_LOCATION + '.' + str(self.service) + '.' + self.fullname + '.' + self.name
 
-class MinitelPageContext(object):
+class PageContext(object):
     '''
     Navigation context
     '''
@@ -93,7 +94,7 @@ class MinitelPageContext(object):
         self.data = data
         self.current_page = current_page
 
-class MinitelPageHandler(object):
+class PageHandler(object):
     '''
     Abstract page handler for custom handlers
     '''
@@ -102,26 +103,26 @@ class MinitelPageHandler(object):
         self.minitel = minitel
         self.context = context
     
-    async def before_rendering(self):
+    def before_rendering(self):
         '''
         Called before rendering the page
         Useful for setting forms
         '''
         pass
 
-    async def render(self):
+    def render(self):
         '''
         Send the page content to the Minitel
         '''
         pass
     
-    async def after_rendering(self):
+    def after_rendering(self):
         '''
         Called after render() to handle keyboard inputs (or redirects)
         '''
         return None
 
-class MinitelDefaultHandler(MinitelPageHandler):
+class DefaultPageHandler(PageHandler):
     '''
     Default page handler for simple pages described in YAML
     '''
@@ -131,34 +132,35 @@ class MinitelDefaultHandler(MinitelPageHandler):
         self.page = self.context.current_page
         self.forms = self.page.forms
         
-    async def before_rendering(self):
-        self.minitel.resetzones()
+    def before_rendering(self):
+        self.minitel.clear_form_inputs()
         #add all zones in the document (if any)
         if self.forms is not None:
             for value in self.forms:
                 row = value['location'][0]
                 col = value['location'][1]
                 lenght = value.get('lenght', 0)
-                color = value.get('color', Pynitel.BLANC)
+                colour = value.get('color', Terminal.WHITE)
                 text = str(value.get('text', ''))
-                self.minitel.zone(row, col, lenght, text, color)
+                form_input = FormInput(col, row, lenght, text, colour, True)
+                self.minitel.add_form_input(form_input)
     
-    async def render(self):
+    def render(self):
         #Send the page content
-        self.minitel.drawscreen(self.page.get_page_data())
+        self.minitel.draw_file(self.page.get_page_data())
                 
-    async def after_rendering(self):
+    def after_rendering(self):
         newcontext = None
         if self.forms is not None:
             #Wait for zones
-            zones = await self.minitel.waitzones(0)
-            logger.debug('Got zone: {zone},{key}'.format(zone=zones[0], key=zones[1]))
+            key = self.minitel.wait_form_inputs()
+            logger.debug('Got zone SEP key : {}'.format(key))
             i = 0
             data = []
             nextpage = None
             for value in self.forms:
                 #Save forms values in a array
-                zonetext = self.minitel.zones[i]['texte']
+                zonetext = self.minitel.forms[i].text
                 data.append({"text": zonetext})
                 #test if zone match
                 #Check if forms matches regular expression
@@ -169,15 +171,16 @@ class MinitelDefaultHandler(MinitelPageHandler):
                             if re.match(valuepattern, zonetext, re.RegexFlag.IGNORECASE):
                                 #value match. what to do now?
                                 if 'page' in action:
-                                    nextpage = MinitelPage.get_page(self.context.current_page.service, str(action['page']))
+                                    nextpage = Page.get_page(self.context.current_page.service, str(action['page']))
                                     break                
                 i = i + 1
                 if nextpage is not None:
-                    newcontext = MinitelPageContext(self.context, data, nextpage)
+                    newcontext = PageContext(self.context, data, nextpage)
                     break
         else:
-            userinput = await self.minitel.waituserinput()
-            logger.debug('Got: {minitel},{code}'.format(minitel=userinput[0], code=userinput[1]))
-            if userinput[0] and userinput[1] == Pynitel.RETOUR:
+            sep, key = self.minitel.wait_input()
+            if sep and key == Terminal.RETOUR:
                 newcontext = self.context.previous
+            elif sep and key == Terminal.CONNEXION_FIN:
+                raise UserTerminateSessionError
         return newcontext

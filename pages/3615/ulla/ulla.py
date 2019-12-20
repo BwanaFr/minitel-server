@@ -3,14 +3,15 @@ Created on 7 Nov 2019
 
 @author: mdonze
 '''
-from MinitelServer.page import MinitelDefaultHandler, MinitelPageContext,\
-    MinitelPage
+from minitel_server.page import DefaultPageHandler, PageContext,\
+    Page
 import logging
-from MinitelServer.pynitel import Pynitel
+from minitel_server.terminal import Terminal
+from minitel_server.exceptions import UserTerminateSessionError
 
 logger = logging.getLogger('Ullapage')
 
-class HandlerUlla(MinitelDefaultHandler):
+class HandlerUlla(DefaultPageHandler):
     '''
     classdocs
     '''
@@ -23,20 +24,18 @@ class HandlerUlla(MinitelDefaultHandler):
         super().__init__(minitel, context)
         logger.info('in our custom handler')
     
-    async def after_rendering(self):
+    def after_rendering(self):
         logger.debug('In after_rendering callback')
-        zones = await self.minitel.waitzones(0)
-        key = zones[1]
-        logger.debug('Got zone: {zone},{key}'.format(zone=zones[0], key=key))
-        if key == Pynitel.ENVOI:
+        key = self.minitel.wait_form_inputs()
+        if key == Terminal.ENVOI:
             logger.debug("Envoi from {}".format(self.context.current_page.fullname))
-            nextpage = MinitelPage.get_page(self.context.current_page.service, "ulla.home")
-            return MinitelPageContext(self.context, self.minitel.zones, nextpage)
-        if key == Pynitel.GUIDE:
+            nextpage = Page.get_page(self.context.current_page.service, "ulla.home")
+            return PageContext(self.context, self.minitel.forms, nextpage)
+        if key == Terminal.GUIDE:
             logger.debug("Guide from {}".format(self.context.current_page.fullname))
-        if key == Pynitel.SOMMAIRE:
+        if key == Terminal.SOMMAIRE:
             logger.debug("Sommaire from {}".format(self.context.current_page.fullname))
-        if key == Pynitel.CONNEXIONFIN:
+        if key == Terminal.CONNEXION_FIN:
             logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
-            self.minitel.end()
+            raise UserTerminateSessionError
         return None

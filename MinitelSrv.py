@@ -8,8 +8,10 @@ import os
 import yaml
 import logging.config
 
-from MinitelServer.server import MinitelServer 
-from MinitelServer import constant
+#from MinitelServer.server import MinitelServer 
+from minitel_server import constant
+from minitel_server.tcp_server import TCPServer
+from minitel_server.terminal import Terminal
 
 logger = logging.getLogger('main')
 
@@ -41,6 +43,7 @@ def setup_logging(default_path='logging.yaml', default_level=logging.INFO, env_k
 def main():
     
     setup_logging()
+    
     # Run the server
     ports = []
     for dirName in next(os.walk(constant.PAGES_LOCATION))[1]:
@@ -49,10 +52,14 @@ def main():
             ports.append(int(dirName))
         except:
             pass
-    
-    MinitelServer(ports).run()
-    #page = MinitelPage.getPage("root")
-    #print('Page name ' + page.name)
+    servers = []
+    for p in ports:
+        srv = TCPServer(p)
+        srv.start() 
+        servers.append(srv) 
+
+    for s in servers:
+        s.join()
 
 if __name__ == '__main__':
     main()
