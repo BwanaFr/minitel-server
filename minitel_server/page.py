@@ -43,7 +43,7 @@ class Page(object):
             self.pagefolder = os.path.join(constant.PAGES_LOCATION, str(self.service))
             for x in range(len(tokens)):
                 self.pagefolder = os.path.join(self.pagefolder, tokens[x])
-            
+        logger.debug("Minitel page folder is {}".format(self.pagefolder))
         #Load page configuration from its yaml
         pageFile = os.path.join(self.pagefolder, self.name + '.yaml')
         try:

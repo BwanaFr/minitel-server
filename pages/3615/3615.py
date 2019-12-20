@@ -65,7 +65,7 @@ class Handler3615(PageHandler):
 
     def shownotfound(self):
         ''' Show a not found message '''
-        self.minitel.message(0, 1, 2, 'Service non trouvé', True)
+        self.minitel.show_message('Service non trouvé')
     
     def showavailableservice(self):
         ''' Show list of available pages '''
@@ -111,7 +111,8 @@ class Handler3615(PageHandler):
                     nextpage = Page.get_page(self.context.current_page.service, pagesnum[pageindex-1])
                     return PageContext(self.context, self.minitel.forms, nextpage)
                 except:
-                    self.minitel.show_message('Mauvais numéro', 10)
+                    self.minitel.bell()
+                    self.minitel.show_message('Mauvais numéro', 2)
             if key == Terminal.ANNULATION:
                 break
             if key == Terminal.SOMMAIRE:

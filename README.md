@@ -11,5 +11,5 @@ A Docker image is available on my Github to ease the usage of Asterisk.
 Probably a lot.
 
 ## Thanks
-This library uses a modified version of [Pynitel](https://github.com/cquest/pynitel) from Christian Quest.
-Thanks to him to share this awesome library.
+Thanks to Christian Quest for sharing [Pynitel](https://github.com/cquest/pynitel).
+It helps me a lot!

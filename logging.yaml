@@ -18,6 +18,6 @@ root:
     handlers: [console]
     propagate: no
 
-loggers:
-    Terminal:
-        level: DEBUG
+#loggers:
+#    Terminal:
+#        level: DEBUG
