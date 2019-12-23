@@ -2,4 +2,6 @@
 .project
 .pydevproject
 *__pycache__*
-MinitelServer/__pycache__
+minitel_server/__pycache__
+venv
+.idea

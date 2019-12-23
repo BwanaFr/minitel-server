@@ -1,8 +1,8 @@
-'''
+"""
 Created on 18 Dec 2019
 
 @author: mdonze
-'''
+"""
 
 import logging
 from select import select
@@ -11,13 +11,14 @@ import time
 
 logger = logging.getLogger('Terminal')
 
+
 class Terminal(object):
     '''
     Minitel terminal control
     '''
-    #Some built-in constants
-    CONN_TIMEOUT = 200          #Milliseconds to wait for connection data
-    
+    # Some built-in constants
+    CONN_TIMEOUT = 200  # Milliseconds to wait for connection data
+
     # Colour constants
     BLACK = 0
     RED = 1
@@ -29,39 +30,39 @@ class Terminal(object):
     WHITE = 7
 
     # Characters attributes
-    CHAR_COLOR = 0x40           #Character colour
-    BACK_COLOR = 0x50           #Background colour
-    CURSOR_BLINK = 0x48         #Cursor blink
-    CURSOR_FIXED = 0x49         #Cursor 
-    START_INCRUSTATION = 0x4B   #Start incrustation
-    END_INCRUSTATION = 0x4A     #End incrustation
-    NORMAL_SIZE = 0x4C          #Characters normal size
-    DOUBLE_HEIGHT = 0x4D        #Characters double height
-    DOUBLE_WIDTH = 0x4E         #Characters double width
-    DOUBLE_SIZE = 0x4F          #Characters double size
+    CHAR_COLOR = 0x40  # Character colour
+    BACK_COLOR = 0x50  # Background colour
+    CURSOR_BLINK = 0x48  # Cursor blink
+    CURSOR_FIXED = 0x49  # Cursor
+    START_INCRUSTATION = 0x4B  # Start incrustation
+    END_INCRUSTATION = 0x4A  # End incrustation
+    NORMAL_SIZE = 0x4C  # Characters normal size
+    DOUBLE_HEIGHT = 0x4D  # Characters double height
+    DOUBLE_WIDTH = 0x4E  # Characters double width
+    DOUBLE_SIZE = 0x4F  # Characters double size
     START_LINE_MASK = 0x58
     END_LINE_MASK = 0x5F
-    START_UNDERLINE = 0x5A      #Underline on
-    END_UNDERLINE = 0x59        #Underline off
-    REVERSE_VIDEO = 0x5D        #Video reversed
-    NORMAL_VIDEO = 0x5C         #Video not-reversed
-    TRANSPARENCY_VIDEO = 0x5E   #Transparency
-    
-    #Other constants
+    START_UNDERLINE = 0x5A  # Underline on
+    END_UNDERLINE = 0x59  # Underline off
+    REVERSE_VIDEO = 0x5D  # Video reversed
+    NORMAL_VIDEO = 0x5C  # Video not-reversed
+    TRANSPARENCY_VIDEO = 0x5E  # Transparency
+
+    # Other constants
     BELL = 0x7
-    CURSOR_LEFT = 0x8           #Move cursor left
-    CURSOR_RIGHT = 0x9          #Move cursor right
-    CURSOR_DOWN = 0xA           #Move cursor down
-    CURSOR_UP = 0xB             #Move cursor up
-    CLEAR_SCREEN = 0xC          #Clear screen
-    SEMIGRAPHICS_MODE = 0xE     #Semi-graphics mode
-    TEXT_MODE = 0xF             #Test mode
-    CURSOR_VISIBLE = 0x11       #Visible cursor
-    CURSOR_INVISIBLE = 0x14     #Invisible cursor
-    CHAR_REPEAT = 0x12          #Character repeat
-    ACCENT = 0x19               #Accent mode
-    CURSOR_HOME = 0x1E          #Home cursor (line 1, col 1)
-    CURSOR_MOVE = 0x1F          #Move cursor to coordinate
+    CURSOR_LEFT = 0x8  # Move cursor left
+    CURSOR_RIGHT = 0x9  # Move cursor right
+    CURSOR_DOWN = 0xA  # Move cursor down
+    CURSOR_UP = 0xB  # Move cursor up
+    CLEAR_SCREEN = 0xC  # Clear screen
+    SEMIGRAPHICS_MODE = 0xE  # Semi-graphics mode
+    TEXT_MODE = 0xF  # Test mode
+    CURSOR_VISIBLE = 0x11  # Visible cursor
+    CURSOR_INVISIBLE = 0x14  # Invisible cursor
+    CHAR_REPEAT = 0x12  # Character repeat
+    ACCENT = 0x19  # Accent mode
+    CURSOR_HOME = 0x1E  # Home cursor (line 1, col 1)
+    CURSOR_MOVE = 0x1F  # Move cursor to coordinate
 
     # Keys constants
     ENVOI = 1
@@ -73,38 +74,39 @@ class Terminal(object):
     CORRECTION = 7
     SUITE = 8
     CONNEXION_FIN = 9
-    
+
     # Protocol constants
-    ATTRIBUTE = 0x1B    #ESC
-    SEP = 0x13          #SEP function
-    ACK_PROTO = 0x1B    #Protocol acknowledge
-    PRO1 = 0x39         #PRO 1 protocol (1 byte following)
-    PRO2 = 0x3A         #PRO 2 protocol (2 bytes following)
-    PRO3 = 0x3B         #PRO 3 protocol (3 bytes following)
-       
+    ATTRIBUTE = 0x1B  # ESC
+    SEP = 0x13  # SEP function
+    ACK_PROTO = 0x1B  # Protocol acknowledge
+    PRO1 = 0x39  # PRO 1 protocol (1 byte following)
+    PRO2 = 0x3A  # PRO 2 protocol (2 bytes following)
+    PRO3 = 0x3B  # PRO 3 protocol (3 bytes following)
 
     def __init__(self, con):
-        '''
+        """
         Terminal constructor con is the TCP socket
-        '''
+        """
         self.con = con
         self.forms = []
-    
-    def add_even_parity(self, data):
-        '''
+
+    @staticmethod
+    def add_even_parity(data):
+        """
         Add even parity to bytes
-        '''
+        """
         ret = bytearray()
         for b in data:
             if bin(b).count('1') % 2:
                 b |= 0x80
             ret.append(b)
         return ret
-    
-    def remove_parity(self, data):
-        '''
+
+    @staticmethod
+    def remove_parity(data):
+        """
         Removes parity bit
-        '''
+        """
         if not data:
             return data
         ret = []
@@ -112,11 +114,11 @@ class Terminal(object):
             c &= 0x7f
             ret.append(c)
         return ret
-            
+
     def write(self, *data):
-        '''
+        """
         Write to the socket
-        '''
+        """
         bytes_data = bytearray()
         for d in data:
             if isinstance(d, str):
@@ -131,17 +133,17 @@ class Terminal(object):
             self.con.sendall(bytes_data)
         except:
             raise DisconnectedError()
-    
+
     def read(self, timeout=None):
-        '''
+        """
         Reads a single byte from socket
-        '''
+        """
         ready_to_read, _ready_to_write, _in_error = \
-               select(
-                  [self.con],
-                  [],
-                  [],
-                  timeout)
+            select(
+                [self.con],
+                [],
+                [],
+                timeout)
         data = None
         if len(ready_to_read) != 0:
             data = self.remove_parity(self.con.recv(1))
@@ -149,66 +151,67 @@ class Terminal(object):
                 raise DisconnectedError
             return data[0]
         raise MinitelTimeoutError()
-    
+
     def read_n(self, expected=1, timeout=None):
-        '''
+        """
         Reads a given amount of data
-        '''
+        """
         data = []
         while len(data) < expected:
             data += [self.read(timeout)]
-        return data    
-    
+        return data
+
     def read_all(self):
-        '''
+        """
         Reads all bytes in the receipt buffer
         Mainly use to flush
-        '''
+        """
         data = []
         while True:
             d = self.remove_parity(self.con.recv(2048))
             if not d:
                 return data
             data += [d]
-    
+
     def wait_connection(self):
-        '''
+        """
         Waits for connection garbage CHARACTERS
-        '''
+        """
         logger.debug("Waiting for connection data...")
         try:
-            self.read(self.CONN_TIMEOUT/1000)
+            while True:
+                d = self.read(self.CONN_TIMEOUT / 1000)
         except MinitelTimeoutError:
             pass
-    
+
     def home_cursor(self):
-        '''
+        """
         Moves cursor to home (1,1) Position
-        '''
+        """
         logger.debug("Move cursor to home")
         self.write(self.CURSOR_HOME)
-    
+
     def clear_screen(self):
-        '''
+        """
         Clears the Minitel screen
-        '''
+        """
         logger.debug("Clear screen")
         self.write(self.CLEAR_SCREEN)
-    
+
     def move_cursor(self, x, y):
-        '''
+        """
         Moves cursor to absolute location
-        '''
-        logger.debug("Move cursor to {}/{}".format(x,y))
+        """
+        logger.debug("Move cursor to {}/{}".format(x, y))
         data = [self.CURSOR_MOVE, 0x40, 0x40]
         data[1] |= y
         data[2] |= x
         self.write(data)
-        
+
     def print_text(self, text):
-        '''
+        """
         Print a text to the Minitel and replace accents
-        '''
+        """
         text = text.replace('à', '\x19\x41a')
         text = text.replace('â', '\x19\x43a')
         text = text.replace('ä', '\x19\x48a')
@@ -249,17 +252,17 @@ class Terminal(object):
         text = text.replace('Ù', 'U').replace('Û', 'U').replace('Ü', 'U')
         text = text.replace('Ç', 'C')
         self.write(text)
-        
+
     def wait_input(self, timeout=None):
-        '''
+        """
         Waits for user input
-        '''
+        """
         while True:
             data = self.read(timeout)
             if data == self.SEP:
-                sep_key = self.read(timeout) 
+                sep_key = self.read(timeout)
                 logger.debug("Got SEP key : 0x{0:x}".format(sep_key))
-                return (True, sep_key - 0x40)
+                return True, sep_key - 0x40
             elif data == self.ACK_PROTO:
                 proto = self.read(timeout)
                 logger.debug("Got protocol acknowledge 0x{0:x}".format(proto))
@@ -270,282 +273,282 @@ class Terminal(object):
                 elif proto == self.PRO3:
                     data = self.read_n(3, timeout)
                 else:
-                    logger.warn("unsupported protocol ack.")
+                    logger.warning("unsupported protocol ack.")
                     self.read_all()
             elif (data >= 0x20) and (data <= 0x7f):
-                return (False, data)
+                return False, data
             elif data == Terminal.ACCENT:
                 ''' Accent '''
                 acc_code = self.read(timeout)
                 if acc_code == 0x23:
-                    return (False, '£')
+                    return False, '£'
                 elif acc_code == 0x27:
-                    return (False, '§')
+                    return False, '§'
                 elif acc_code == 0x2C:
-                    return (False, '←')
+                    return False, '←'
                 elif acc_code == 0x2D:
-                    return (False, '↑')
+                    return False, '↑'
                 elif acc_code == 0x2E:
-                    return (False, '→')
+                    return False, '→'
                 elif acc_code == 0x2F:
-                    return (False, '↓')
+                    return False, '↓'
                 elif acc_code == 0x30:
-                    return (False, '°')
+                    return False, '°'
                 elif acc_code == 0x31:
-                    return (False, '±')
+                    return False, '±'
                 elif acc_code == 0x3C:
-                    return (False, '¼')
+                    return False, '¼'
                 elif acc_code == 0x3D:
-                    return (False, '½')
+                    return False, '½'
                 elif acc_code == 0x3E:
-                    return (False, '¾')
+                    return False, '¾'
                 elif acc_code == 0x41:
                     acc_char = self.read(timeout)
                     if acc_char == 'a':
-                        return (False, 'à')
+                        return False, 'à'
                     elif acc_char == 'e':
-                        return (False, 'è')
+                        return False, 'è'
                     elif acc_char == 'i':
-                        return (False, 'ì')
+                        return False, 'ì'
                     elif acc_char == 'o':
-                        return (False, 'ò')
+                        return False, 'ò'
                     elif acc_char == 'u':
-                        return (False, 'ù')
+                        return False, 'ù'
                     else:
-                        return (False, acc_char)
+                        return False, acc_char
                 elif acc_code == 0x42:
                     acc_char = self.read(timeout)
                     if acc_char == 'a':
-                        return (False, 'á')
+                        return False, 'á'
                     elif acc_char == 'e':
-                        return (False, 'é')
+                        return False, 'é'
                     elif acc_char == 'i':
-                        return (False, 'í')
+                        return False, 'í'
                     elif acc_char == 'o':
-                        return (False, 'ó')
+                        return False, 'ó'
                     elif acc_char == 'u':
-                        return (False, 'ú')
+                        return False, 'ú'
                     else:
-                        return (False, acc_char)
+                        return False, acc_char
                 elif acc_code == 0x43:
                     acc_char = self.read(timeout)
                     if acc_char == 'a':
-                        return (False, 'â')
+                        return False, 'â'
                     elif acc_char == 'e':
-                        return (False, 'ê')
+                        return False, 'ê'
                     elif acc_char == 'i':
-                        return (False, 'î')
+                        return False, 'î'
                     elif acc_char == 'o':
-                        return (False, 'ô')
+                        return False, 'ô'
                     elif acc_char == 'u':
-                        return (False, 'û')
+                        return False, 'û'
                     else:
-                        return (False, acc_char)
+                        return False, acc_char
                 elif acc_code == 0x48:
                     acc_char = self.read(timeout)
                     if acc_char == 'a':
-                        return (False, 'ä')
+                        return False, 'ä'
                     elif acc_char == 'e':
-                        return (False, 'ë')
+                        return False, 'ë'
                     elif acc_char == 'i':
-                        return (False, 'ï')
+                        return False, 'ï'
                     elif acc_char == 'o':
-                        return (False, 'ö')
+                        return False, 'ö'
                     elif acc_char == 'u':
-                        return (False, 'ü')
+                        return False, 'ü'
                     else:
-                        return (False, acc_char)
+                        return False, acc_char
                 elif acc_code == 0x6A:
-                    return (False, 'Œ')
+                    return False, 'Œ'
                 elif acc_code == 0x7A:
-                    return (False, 'œ')
+                    return False, 'œ'
                 elif acc_code == 0x7B:
-                    return (False, 'ß')
+                    return False, 'ß'
             else:
                 logger.error("Got out of range character :0x{0:x}".format(data))
-    
+
     def text_colour(self, colour):
-        '''
+        """
         Set the text colour
-        '''
+        """
         logger.debug("Setting char colour to {}".format(colour))
         self.write(self.ATTRIBUTE, ((colour & 0xF) | self.CHAR_COLOR))
-        
+
     def background_colour(self, colour):
-        '''
+        """
         Set the text background colour
-        '''
+        """
         logger.debug("Setting background colour to {}".format(colour))
         self.write(self.ATTRIBUTE, ((colour & 0xF) | self.BACK_COLOR))
-    
+
     def reverse_video(self):
-        '''
+        """
         Sets the video in reverse mode
-        '''
-        self.write(self.ATTRIBUTE, self.REVERSE_VIDEO);
-        
+        """
+        self.write(self.ATTRIBUTE, self.REVERSE_VIDEO)
+
     def normal_video(self):
-        '''
+        """
         Sets the video in normal mode
-        '''
-        self.write(self.ATTRIBUTE, self.NORMAL_VIDEO);
-    
+        """
+        self.write(self.ATTRIBUTE, self.NORMAL_VIDEO)
+
     def transparent_video(self):
-        '''
+        """
         Sets the video in transparent mode
-        '''
-        self.write(self.ATTRIBUTE, self.TRANSPARENCY_VIDEO);
-        
+        """
+        self.write(self.ATTRIBUTE, self.TRANSPARENCY_VIDEO)
+
     def blink_cursor(self, blink=True):
-        '''
+        """
         Sets if the cursor is blinking
-        '''
+        """
         if blink is True:
             self.write(self.ATTRIBUTE, self.CURSOR_BLINK)
         else:
             self.write(self.ATTRIBUTE, self.CURSOR_FIXED)
-    
+
     def normal_size(self):
-        '''
+        """
         Sets the text in normal size
-        '''
+        """
         self.write(self.ATTRIBUTE, self.NORMAL_SIZE)
-    
+
     def double_height_size(self):
-        '''
+        """
         Sets the text in double height size
-        '''
+        """
         self.write(self.ATTRIBUTE, self.DOUBLE_HEIGHT)
 
     def double_width_size(self):
-        '''
+        """
         Sets the text in double width size
-        '''
+        """
         self.write(self.ATTRIBUTE, self.DOUBLE_WIDTH)
 
     def double_size(self):
-        '''
+        """
         Sets the text in double size
-        '''
+        """
         self.write(self.ATTRIBUTE, self.DOUBLE_SIZE)
 
     def underline(self, on=True):
-        '''
+        """
         Sets underline on/off
-        '''
+        """
         if on is True:
             self.write(self.ATTRIBUTE, self.START_UNDERLINE)
         else:
             self.write(self.ATTRIBUTE, self.END_UNDERLINE)
-    
+
     def bell(self):
-        '''
+        """
         Sends a bell to Minitel
-        '''
+        """
         self.write(self.BELL)
-    
+
     def move_cursor_left(self):
-        '''
+        """
         Moves cursor to left by one column
-        '''
+        """
         self.write(self.CURSOR_LEFT)
 
     def move_cursor_right(self):
-        '''
+        """
         Moves cursor to right by one column
-        '''
-        self.write(self.RIGHT)
-        
+        """
+        self.write(self.CURSOR_RIGHT)
+
     def move_cursor_up(self):
-        '''
+        """
         Moves cursor up by one line
-        '''
-        self.write(self.UP)
+        """
+        self.write(self.CURSOR_UP)
 
     def move_cursor_down(self):
-        '''
+        """
         Moves cursor down by one line
-        '''
-        self.write(self.DOWN)
+        """
+        self.write(self.CURSOR_DOWN)
 
     def semigraphics_mode(self):
-        '''
+        """
         Switch to semi-graphics mode
-        '''
+        """
         self.write(self.SEMIGRAPHICS_MODE)
-    
+
     def text_mode(self):
-        '''
+        """
         Switch to text mode
-        '''
+        """
         self.write(self.TEXT_MODE)
-    
+
     def visible_cursor(self, visible=True):
-        '''
+        """
         Sets if the cursor will be visible or invisible
-        '''
+        """
         if visible is True:
             self.write(self.CURSOR_VISIBLE)
         else:
             self.write(self.CURSOR_INVISIBLE)
-    
+
     def draw_file(self, filename):
-        '''
+        """
         Send a raw file to Minitel (VTX. VTD files)
-        '''
+        """
         logger.debug("Rendering file {}".format(filename))
         try:
             with open(filename, 'rb') as f:
                 self.con.sendall(f.read())
         except:
             raise DisconnectedError()
-    
+
     def add_form_input(self, form_input):
-        '''
+        """
         Adds a form input
-        '''
+        """
         self.forms.append(form_input)
-    
+
     def clear_form_inputs(self):
-        '''
+        """
         Removes all forms
-        '''
+        """
         self.forms.clear()
-    
+
     def wait_form_inputs(self):
-        '''
+        """
         Waits for user inputs to be filled
-        '''
+        """
         for f in self.forms:
             f.prepare(self)
-            
-        current_input = 0;
+
+        current_input = 0
         while True:
             key = self.forms[current_input].grab_focus(self)
             if key == self.SUITE:
                 current_input += 1
-                if current_input>= len(self.forms):
-                        current_input = 0
+                if current_input >= len(self.forms):
+                    current_input = 0
                 logger.debug("Moving to next form input : {}".format(current_input))
             else:
                 return key
-    
+
     def print_repeat(self, c, count):
-        '''
+        """
         Print character c count times
-        '''
+        """
         self.write(c)
         if count > 2:
-            self.write(self.CHAR_REPEAT, (0x40 | count-1))
+            self.write(self.CHAR_REPEAT, (0x40 | count - 1))
         else:
             for _i in range(1, count):
                 self.write(c)
 
     def show_message(self, text, duration=2):
-        '''
+        """
         Displays a notification message on top left of screen
         User must move back the cursor to continue (and put it visible)
-        '''
+        """
         self.visible_cursor(False)
         self.move_cursor(1, 0)
         self.print_text(text)
@@ -555,16 +558,16 @@ class Terminal(object):
 
 
 class FormInput(object):
-    '''
+    """
     Represents an input form
-    '''
-    
+    """
+
     def __init__(self, locx, locy, lenght,
-                 text = "",
+                 text="",
                  colour=Terminal.WHITE,
-                 initial_draw = False,
-                 placeholder = '.'):
-        '''
+                 initial_draw=False,
+                 placeholder='.'):
+        """
         locx : Start X location of the input
         locy : Start Y location of the input
         lenght : Maximum lenght of the input
@@ -572,7 +575,7 @@ class FormInput(object):
         initial_draw : True if the input needs to be drawn
         placeholder : Character to put as placeholder
         colour : Text colour
-        '''
+        """
         self._locx = locx
         self._locy = locy
         self._lenght = lenght
@@ -580,27 +583,26 @@ class FormInput(object):
         self._initial_draw = initial_draw
         self._placeholder = placeholder
         self._colour = colour
-    
+
     def prepare(self, terminal):
-        '''
+        """
         Prepare form input by drawing placeholder, if enabled
-        '''
-        if self._initial_draw :
-            #Print the initial form text
-            terminal.move_cursor(self._locx, self._locy)            
+        """
+        if self._initial_draw:
+            # Print the initial form text
+            terminal.move_cursor(self._locx, self._locy)
             terminal.text_colour(self._colour)
             terminal.print_text(self.text)
             rem = self._lenght - len(self.text)
             if rem > 0:
                 terminal.print_repeat(self._placeholder, rem)
-    
-    def grab_focus(self, terminal):
-        '''
-        Manage this input
-        '''
-        #Print the initial form text
 
-        
+    def grab_focus(self, terminal):
+        """
+        Manage this input
+        """
+        # Print the initial form text
+
         offset = len(self.text)
         if offset >= self._lenght:
             offset = self._lenght - 1
@@ -610,17 +612,17 @@ class FormInput(object):
         while True:
             sep, key = terminal.wait_input()
             if sep is True:
-                #Minitel key
+                # Minitel key
                 if key == Terminal.CORRECTION:
-                    if len(self.text)<1:
+                    if len(self.text) < 1:
                         terminal.bell()
                     else:
-                        #Don't move back if we are at the end of the field
-                        if (len(self.text)< self._lenght):
+                        # Don't move back if we are at the end of the field
+                        if len(self.text) < self._lenght:
                             terminal.move_cursor_left()
                         terminal.print_text(self._placeholder)
                         terminal.move_cursor_left()
-                        self.text = (self.text[0:-1])                        
+                        self.text = (self.text[0:-1])
                 else:
                     return key
             else:
@@ -630,7 +632,7 @@ class FormInput(object):
                     c = chr(key)
                     self.text += c
                     terminal.print_text(c)
-                    #Move back if we are at the end of the field
+                    # Move back if we are at the end of the field
                     if len(self.text) >= self._lenght:
                         terminal.move_cursor_left()
             logger.debug("New text is {}".format(self.text))

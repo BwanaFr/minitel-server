@@ -56,10 +56,11 @@ def main():
     for p in ports:
         srv = TCPServer(p)
         srv.start() 
-        servers.append(srv) 
+        servers.append(srv)
 
     for s in servers:
-        s.join()
+        s.join
+
 
 if __name__ == '__main__':
     main()
