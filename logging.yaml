@@ -19,5 +19,5 @@ root:
     propagate: no
 
 loggers:
-    Terminal:
+    Ullapage:
         level: DEBUG

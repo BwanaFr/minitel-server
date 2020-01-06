@@ -1,0 +1,8 @@
+forms:
+    - location: [24,31]
+      lenght : 2
+      actions:
+        - value: "[0]?[1]"
+          page: "ulla.chat"
+        - value: "[0]?[2]"
+          page: "ulla.404"

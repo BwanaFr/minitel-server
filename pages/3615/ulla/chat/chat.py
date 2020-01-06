@@ -1,5 +1,5 @@
 """
-Created on 7 Nov 2019
+Created on 26 Dec 2019
 
 @author: mdonze
 """
@@ -8,24 +8,39 @@ from minitel_server.page import DefaultPageHandler, PageContext, \
 import logging
 from minitel_server.terminal import Terminal
 from minitel_server.exceptions import UserTerminateSessionError
+import threading
 
 logger = logging.getLogger('Ullapage')
 
 
-class HandlerUlla(DefaultPageHandler):
+class HandlerUllaChat(DefaultPageHandler):
     """
-    classdocs
+    A basic chat for Ulla
     """
+    num = 0
+    lock = threading.RLock()
 
     def __init__(self, minitel, context):
         """
         Constructor
         """
         super().__init__(minitel, context)
-        logger.info('in our custom handler')
+        logger.info('HandlerUllaChat: in our custom handler')
+
+    def before_rendering(self):
+        logger.debug('HandlerUllaChat: In before_rendering callback')
+        super().before_rendering()
+        HandlerUllaChat.lock.acquire()
+        HandlerUllaChat.num += 1
+        HandlerUllaChat.lock.release()
+
+    def render(self):
+        super().render()
+        self.minitel.move_cursor(1, 3)
+        self.minitel.print_text("{} utilisateurs en ligne".format(HandlerUllaChat.num))
 
     def after_rendering(self):
-        logger.debug('In after_rendering callback')
+        logger.debug('HandlerUllaChat: In after_rendering callback')
         key = self.minitel.wait_form_inputs()
         if key == Terminal.ENVOI:
             logger.debug("Envoi from {}".format(self.context.current_page.fullname))
