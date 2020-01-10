@@ -1,6 +1,6 @@
 forms:
     - location: [17,12]
-      lenght : 29
+      length : 29
       actions:
         -   value: "hello"
             page: "hello"

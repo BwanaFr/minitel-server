@@ -30,8 +30,9 @@ class HandlerUlla(DefaultPageHandler):
         if key == Terminal.ENVOI:
             logger.debug("Envoi from {}".format(self.context.current_page.fullname))
             logger.debug('Username is {}'.format(self.minitel.forms[0].text))
-            nextpage = Page.get_page(self.context.current_page.service, "ulla.home")
-            return PageContext(self.context, self.minitel.forms, nextpage)
+            data = {"username": self.minitel.forms[0].text}
+            next_page = Page.get_page(self.context.current_page.service, "ulla.home")
+            return PageContext(self.context, data, next_page)
         if key == Terminal.GUIDE:
             logger.debug("Guide from {}".format(self.context.current_page.fullname))
         if key == Terminal.SOMMAIRE:

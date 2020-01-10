@@ -24,15 +24,13 @@ class TCPServer(Thread):
         '''
         Thread.__init__(self)
         self.port = port;
-        
-    
+
     def run(self):
         logger.info("Listening for connection on port {}".format(self.port))
         tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if SIMULATE_12000_BPS:
             tcp_server.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-            tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1)
         tcp_server.bind((TCP_IP, self.port))
         threads = []
         while True :

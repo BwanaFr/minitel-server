@@ -1,6 +1,6 @@
 forms:
     - location: [24,31]
-      lenght : 2
+      length : 2
       actions:
         - value: "[0]?[1]"
           page: "ulla.chat"

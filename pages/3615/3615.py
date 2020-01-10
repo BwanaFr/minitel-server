@@ -16,57 +16,58 @@ from minitel_server.exceptions import UserTerminateSessionError
 
 logger = logging.getLogger('3615page')
 
+
 class Handler3615(PageHandler):
     '''
     Handler for 3615 connection
     '''
-    
+
     def __init__(self, minitel, context):
         super().__init__(minitel, context)
-    
+
     def before_rendering(self):
         self.minitel.clear_form_inputs()
         form_input = FormInput(12, 17, 29, '', Terminal.YELLOW)
         self.minitel.add_form_input(form_input)
-            
+
     def render(self):
         page = self.context.current_page
-        #Send the page content
+        # Send the page content
         self.minitel.draw_file(page.get_page_data())
-    
+
     def after_rendering(self):
         key = self.minitel.wait_form_inputs()
-        
+
         if key == Terminal.ENVOI:
-            logger.debug("Envoi from {}".format(self.context.current_page.pagefolder))
+            logger.debug("Envoi from {}".format(self.context.current_page.page_folder))
             nextpage = self.getpage(self.minitel.forms[0].text)
             if nextpage is not None:
                 return PageContext(self.context, self.minitel.forms, nextpage)
             else:
                 self.shownotfound()
         if key == Terminal.GUIDE:
-            logger.debug("Guide from {}".format(self.context.current_page.pagefolder))
+            logger.debug("Guide from {}".format(self.context.current_page.page_folder))
             return self.showavailableservice()
         if key == Terminal.SOMMAIRE:
             return self.showprice()
         if key == Terminal.CONNEXION_FIN:
             raise UserTerminateSessionError
         return None
-    
+
     def getpage(self, name):
         ''' Gets a new page if found in child folder '''
         name = name.lower()
-        nextpage = None
-        for dirName in next(os.walk(self.context.current_page.pagefolder))[1]:
+        next_page = None
+        for dirName in next(os.walk(self.context.current_page.page_folder))[1]:
             if dirName.lower() == name:
                 logger.debug("Found page {}".format(name))
-                nextpage = Page.get_page(self.context.current_page.service, name)
-        return nextpage
+                next_page = Page.get_page(self.context.current_page.service, name)
+        return next_page
 
     def shownotfound(self):
         ''' Show a not found message '''
         self.minitel.show_message('Service non trouvé')
-    
+
     def showavailableservice(self):
         ''' Show list of available pages '''
         self.minitel.clear_screen()
@@ -85,16 +86,16 @@ class Handler3615(PageHandler):
         self.minitel.print_text("          Numéro du service: ..  + ")
         self.minitel.reverse_video()
         self.minitel.print_text("ENVOI")
-        self.minitel.normal_video()      
+        self.minitel.normal_video()
         i = 0
         x = 1
         pagesnum = []
-        for dirName in next(os.walk(self.context.current_page.pagefolder))[1]:
+        for dirName in next(os.walk(self.context.current_page.page_folder))[1]:
             if not dirName.startswith('_'):
-                self.minitel.move_cursor(x, 4+i)
+                self.minitel.move_cursor(x, 4 + i)
                 pagesnum.append(dirName)
-                self.minitel.print_text("{:02d} {}".format(len(pagesnum), 
-                                                       dirName[0:16]))
+                self.minitel.print_text("{:02d} {}".format(len(pagesnum),
+                                                           dirName[0:16]))
                 i = i + 1
                 if i > 18:
                     x = 21
@@ -107,8 +108,8 @@ class Handler3615(PageHandler):
             if key == Terminal.ENVOI:
                 try:
                     pageindex = int(self.minitel.forms[0].text)
-                    logger.debug('Selected page {:d}/{}'.format(pageindex,pagesnum[pageindex-1]))
-                    nextpage = Page.get_page(self.context.current_page.service, pagesnum[pageindex-1])
+                    logger.debug('Selected page {:d}/{}'.format(pageindex, pagesnum[pageindex - 1]))
+                    nextpage = Page.get_page(self.context.current_page.service, pagesnum[pageindex - 1])
                     return PageContext(self.context, self.minitel.forms, nextpage)
                 except:
                     self.minitel.bell()
@@ -120,7 +121,7 @@ class Handler3615(PageHandler):
             if key == Terminal.GUIDE:
                 break
         return None
-    
+
     def showprice(self):
         self.minitel.clear_screen()
         self.minitel.move_cursor(1, 2)

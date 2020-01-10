@@ -64,6 +64,7 @@ class Terminal(object):
     CURSOR_INVISIBLE = 0x14  # Invisible cursor
     CHAR_REPEAT = 0x12  # Character repeat
     ACCENT = 0x19  # Accent mode
+    CLEAR_EOL = 0x18  # Clear until end of line
     CURSOR_HOME = 0x1E  # Home cursor (line 1, col 1)
     CURSOR_MOVE = 0x1F  # Move cursor to coordinate
 
@@ -92,6 +93,7 @@ class Terminal(object):
         """
         self.con = con
         self.forms = []
+        self.current_form = 0
 
     @staticmethod
     def add_even_parity(data):
@@ -205,6 +207,13 @@ class Terminal(object):
         """
         logger.debug("Clear screen")
         self.write(self.CLEAR_SCREEN)
+
+    def clear_eol(self):
+        """
+        Clears until end of line
+        """
+        logger.debug("Clear EOL")
+        self.write(self.CLEAR_EOL)
 
     def move_cursor(self, x, y):
         """
@@ -519,22 +528,23 @@ class Terminal(object):
         Removes all forms
         """
         self.forms.clear()
+        self.current_form = 0
 
-    def wait_form_inputs(self):
+    def wait_form_inputs(self, timeout=None):
         """
         Waits for user inputs to be filled
         """
         for f in self.forms:
             f.prepare(self)
 
-        current_input = 0
+        self.current_form = 0
         while True:
-            key = self.forms[current_input].grab_focus(self)
+            key = self.forms[self.current_form].grab_focus(self, timeout)
             if key == self.SUITE:
-                current_input += 1
-                if current_input >= len(self.forms):
-                    current_input = 0
-                logger.debug("Moving to next form input : {}".format(current_input))
+                self.current_form += 1
+                if self.current_form >= len(self.forms):
+                    self.current_form = 0
+                logger.debug("Moving to next form input : {}".format(self.current_form))
             else:
                 return key
 
@@ -567,7 +577,7 @@ class FormInput(object):
     Represents an input form
     """
 
-    def __init__(self, locx, locy, lenght,
+    def __init__(self, locx, locy, length,
                  text="",
                  colour=Terminal.WHITE,
                  initial_draw=False,
@@ -575,7 +585,7 @@ class FormInput(object):
         """
         locx : Start X location of the input
         locy : Start Y location of the input
-        lenght : Maximum lenght of the input
+        length : Maximum length of the input
         text : Initial text
         initial_draw : True if the input needs to be drawn
         placeholder : Character to put as placeholder
@@ -583,9 +593,9 @@ class FormInput(object):
         """
         self._locx = locx
         self._locy = locy
-        self._lenght = lenght
-        self.text = text[0:self._lenght]
-        self._initial_draw = initial_draw
+        self._length = length
+        self.text = text[0:self._length]
+        self.initial_draw = initial_draw
         self._placeholder = placeholder
         self._colour = colour
 
@@ -593,29 +603,35 @@ class FormInput(object):
         """
         Prepare form input by drawing placeholder, if enabled
         """
-        if self._initial_draw:
-            # Print the initial form text
-            terminal.move_cursor(self._locx, self._locy)
-            terminal.text_colour(self._colour)
-            terminal.print_text(self.text)
-            rem = self._lenght - len(self.text)
-            if rem > 0:
-                terminal.print_repeat(self._placeholder, rem)
+        if self.initial_draw:
+            if self._length > 0:
+                # Print the initial form text
+                terminal.move_cursor(self._locx, self._locy)
+                terminal.text_colour(self._colour)
+                terminal.print_text(self.text)
+                rem = self._length - len(self.text)
+                if rem > 0:
+                    terminal.print_repeat(self._placeholder, rem)
+            self.initial_draw = False
 
-    def grab_focus(self, terminal):
+    def grab_focus(self, terminal, timeout=None):
         """
         Manage this input
         """
-        # Print the initial form text
-
-        offset = len(self.text)
-        if offset >= self._lenght:
-            offset = self._lenght - 1
-        terminal.move_cursor(self._locx + offset, self._locy)
-        terminal.text_colour(self._colour)
-        terminal.visible_cursor(True)
+        if self._length > 0:
+            # Move to end of text
+            offset = len(self.text)
+            if offset >= self._length:
+                offset = self._length - 1
+                if offset < 1:
+                    offset = 1
+            terminal.move_cursor(self._locx + offset, self._locy)
+            terminal.text_colour(self._colour)
+            terminal.visible_cursor(True)
+        else:
+            terminal.visible_cursor(False)
         while True:
-            sep, key = terminal.wait_input()
+            sep, key = terminal.wait_input(timeout)
             if sep is True:
                 # Minitel key
                 if key == Terminal.CORRECTION:
@@ -623,7 +639,7 @@ class FormInput(object):
                         terminal.bell()
                     else:
                         # Don't move back if we are at the end of the field
-                        if len(self.text) < self._lenght:
+                        if len(self.text) < self._length:
                             terminal.move_cursor_left()
                         terminal.print_text(self._placeholder)
                         terminal.move_cursor_left()
@@ -631,13 +647,13 @@ class FormInput(object):
                 else:
                     return key
             else:
-                if len(self.text) >= self._lenght:
+                if len(self.text) >= self._length:
                     terminal.bell()
                 else:
                     c = chr(key)
                     self.text += c
                     terminal.print_text(c)
                     # Move back if we are at the end of the field
-                    if len(self.text) >= self._lenght:
+                    if len(self.text) >= self._length:
                         terminal.move_cursor_left()
             logger.debug("New text is {}".format(self.text))
