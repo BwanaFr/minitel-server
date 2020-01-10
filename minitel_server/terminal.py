@@ -6,6 +6,9 @@ Created on 18 Dec 2019
 
 import logging
 from select import select
+from socket import socket
+
+from minitel_server.constant import SIMULATE_12000_BPS
 from minitel_server.exceptions import DisconnectedError, MinitelTimeoutError
 import time
 
@@ -13,9 +16,9 @@ logger = logging.getLogger('Terminal')
 
 
 class Terminal(object):
-    '''
+    """
     Minitel terminal control
-    '''
+    """
     # Some built-in constants
     CONN_TIMEOUT = 200  # Milliseconds to wait for connection data
 
@@ -130,8 +133,13 @@ class Terminal(object):
         logger.debug("Writing {} to Minitel".format(bytes_data))
         try:
             bytes_data = self.add_even_parity(bytes_data)
-            self.con.sendall(bytes_data)
-        except:
+            if SIMULATE_12000_BPS:
+                for b in bytes_data:
+                    self.con.send(b.to_bytes(1, 'big'))
+                    time.sleep(0.0083)
+            else:
+                self.con.sendall(bytes_data)
+        except ConnectionAbortedError:
             raise DisconnectedError()
 
     def read(self, timeout=None):
@@ -497,11 +505,8 @@ class Terminal(object):
         Send a raw file to Minitel (VTX. VTD files)
         """
         logger.debug("Rendering file {}".format(filename))
-        try:
-            with open(filename, 'rb') as f:
-                self.con.sendall(f.read())
-        except:
-            raise DisconnectedError()
+        with open(filename, 'rb') as f:
+            self.write(f.read())
 
     def add_form_input(self, form_input):
         """
