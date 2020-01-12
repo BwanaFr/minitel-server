@@ -123,6 +123,7 @@ class HandlerUllaChat(DefaultPageHandler):
                     logger.debug("Messages printed")
 
                 try:
+                    logger.debug("Cursor moved: {}".format(cursor_moved))
                     key = self.minitel.wait_form_inputs(timeout=0.1, move_cursor=cursor_moved)
                     if key == Terminal.ENVOI:
                         HandlerUllaChat.chat_room.send_message({"user": self.user_name,
