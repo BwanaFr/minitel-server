@@ -10,7 +10,7 @@ from minitel_server.page import DefaultPageHandler, PageContext, \
     Page
 import logging
 from minitel_server.terminal import Terminal
-from minitel_server.exceptions import UserTerminateSessionError, MinitelTimeoutError
+from minitel_server.exceptions import UserTerminateSessionError, MinitelTimeoutError, DisconnectedError
 import threading
 
 logger = logging.getLogger('Ullapage')
@@ -82,58 +82,63 @@ class HandlerUllaChat(DefaultPageHandler):
 
     def after_rendering(self):
         logger.debug('HandlerUllaChat: In after_rendering callback')
-        while True:
-            if not self._new_message_queue.empty():
-                self.minitel.visible_cursor(False)
-                update_user_count = False
-                while True:
-                    try:
-                        item = self._new_message_queue.get_nowait()
-                        if item['type'] != 'message':
-                            update_user_count = True
-                        self._messages.append(item)
-                    except queue.Empty:
-                        break
-                if update_user_count:
-                    self.minitel.move_cursor(1, 3)
-                    count = HandlerUllaChat.chat_room.get_user_count()
-                    if count == 1:
-                        self.minitel.print_text("1 utilisateur en ligne")
-                    else:
-                        self.minitel.print_text(
-                            "{} utilisateurs en ligne".format(count))
-                    self.minitel.clear_eol();
+        try:
+            while True:
+                if not self._new_message_queue.empty():
+                    self.minitel.visible_cursor(False)
+                    update_user_count = False
+                    while True:
+                        try:
+                            item = self._new_message_queue.get_nowait()
+                            if item['type'] != 'message':
+                                update_user_count = True
+                            self._messages.append(item)
+                        except queue.Empty:
+                            break
+                    if update_user_count:
+                        self.minitel.move_cursor(1, 3)
+                        count = HandlerUllaChat.chat_room.get_user_count()
+                        if count == 1:
+                            self.minitel.print_text("1 utilisateur en ligne")
+                        else:
+                            self.minitel.print_text(
+                                "{} utilisateurs en ligne".format(count))
+                        self.minitel.clear_eol();
 
-                i = 5
-                for m in self._messages:
-                    if m['type'] == 'message':
-                        self.minitel.move_cursor(1, i)
-                        self.minitel.text_colour(Terminal.BLUE)
-                        self.minitel.print_text(m['user'])
-                        self.minitel.text_colour(Terminal.CYAN)
-                        self.minitel.print_text('→')
-                        self.minitel.text_colour(Terminal.WHITE)
-                        self.minitel.print_text(m['message'])
-                        self.minitel.clear_eol()
-                        i = i + 1
-                logger.debug("Messages printed")
-            try:
-                key = self.minitel.wait_form_inputs(0.2)
-                if key == Terminal.ENVOI:
-                    HandlerUllaChat.chat_room.send_message({"user": self.user_name,
-                                                            "message": self.minitel.forms[0].text})
-                    self.minitel.forms[0].text = ""
-                    self.minitel.forms[0].initial_draw = True
-                elif key == Terminal.RETOUR:
-                    next_page = Page.get_page(self.context.current_page.service, "ulla.home")
-                    HandlerUllaChat.chat_room.remove_client(self)
-                    return PageContext(self.context, self.context.previous.data, next_page)
-                elif key == Terminal.CONNEXION_FIN:
-                    logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
-                    HandlerUllaChat.chat_room.remove_client(self)
-                    raise UserTerminateSessionError
-            except MinitelTimeoutError:
-                pass
+                    i = 5
+                    for m in self._messages:
+                        if m['type'] == 'message':
+                            self.minitel.move_cursor(1, i)
+                            self.minitel.text_colour(Terminal.BLUE)
+                            self.minitel.print_text(m['user'])
+                            self.minitel.text_colour(Terminal.CYAN)
+                            self.minitel.print_text('→')
+                            self.minitel.text_colour(Terminal.WHITE)
+                            self.minitel.print_text(m['message'])
+                            self.minitel.clear_eol()
+                            i = i + 1
+                    logger.debug("Messages printed")
+                try:
+                    key = self.minitel.wait_form_inputs(0.2)
+                    if key == Terminal.ENVOI:
+                        HandlerUllaChat.chat_room.send_message({"user": self.user_name,
+                                                                "message": self.minitel.forms[0].text})
+                        self.minitel.forms[0].text = ""
+                        self.minitel.forms[0].initial_draw = True
+                    elif key == Terminal.RETOUR:
+                        next_page = Page.get_page(self.context.current_page.service, "ulla.home")
+                        HandlerUllaChat.chat_room.remove_client(self)
+                        return PageContext(self.context, self.context.previous.data, next_page)
+                    elif key == Terminal.CONNEXION_FIN:
+                        logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
+                        HandlerUllaChat.chat_room.remove_client(self)
+                        raise UserTerminateSessionError
+                except MinitelTimeoutError:
+                    pass
+        except DisconnectedError as e:
+            logger.debug("User {} disconnected".format(self.user_name))
+            HandlerUllaChat.chat_room.remove_client(self)
+            raise e
 
         return None
 

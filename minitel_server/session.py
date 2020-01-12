@@ -37,7 +37,7 @@ class Session(Thread):
         try:
             logger.debug("Minitel session started")
             ''' Waits for first -garbage- characters '''
-            self.terminal.wait_connection()
+            # self.terminal.wait_connection()
             self.terminal.clear_screen()
             self.terminal.home_cursor()
             ''' Loads the root page and create the default context '''
@@ -63,8 +63,7 @@ class Session(Thread):
                 new_context = handler.after_rendering()
                 if new_context is not None:
                     self.context = new_context
-                    
-                    
+
         except DisconnectedError:
             logger.info("IP {} disconnected".format(self.ip))
         except UserTerminateSessionError:

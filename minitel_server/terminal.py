@@ -156,8 +156,11 @@ class Terminal(object):
                 timeout)
         data = None
         if len(ready_to_read) != 0:
-            data = self.remove_parity(self.con.recv(1))
-            if not data:
+            try:
+                data = self.remove_parity(self.con.recv(1))
+                if not data:
+                    raise DisconnectedError
+            except ConnectionResetError:
                 raise DisconnectedError
             return data[0]
         raise MinitelTimeoutError()
@@ -279,6 +282,9 @@ class Terminal(object):
             if data == self.SEP:
                 sep_key = self.read(timeout)
                 logger.debug("Got SEP key : 0x{0:x}".format(sep_key))
+                if sep_key < 0x41 or sep_key > 0x49:
+                    logger.debug("SEP is an acknowledge")
+                    continue
                 return True, sep_key - 0x40
             elif data == self.ACK_PROTO:
                 proto = self.read(timeout)

@@ -19,5 +19,5 @@ root:
     propagate: no
 
 loggers:
-    Ullapage:
+    Ulla:
         level: DEBUG

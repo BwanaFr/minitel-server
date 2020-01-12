@@ -33,14 +33,14 @@ class TCPServer(Thread):
             tcp_server.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         tcp_server.bind((TCP_IP, self.port))
         threads = []
-        while True :
+        while True:
             tcp_server.listen()
             (conn, (ip,_port)) = tcp_server.accept()
             logger.info("Got connection from {}".format(ip))
             conn.setblocking(0)
-            newthread = Session(ip, self.port, conn) 
-            newthread.start() 
-            threads.append(newthread) 
+            new_thread = Session(ip, self.port, conn)
+            new_thread.start()
+            threads.append(new_thread)
  
         for t in threads: 
             t.join() 
