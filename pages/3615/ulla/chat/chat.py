@@ -83,8 +83,11 @@ class HandlerUllaChat(DefaultPageHandler):
     def after_rendering(self):
         logger.debug('HandlerUllaChat: In after_rendering callback')
         try:
+            cursor_moved = True
             while True:
                 if not self._new_message_queue.empty():
+                    logger.debug("_new_message_queue is not empty")
+                    cursor_moved = True
                     self.minitel.visible_cursor(False)
                     update_user_count = False
                     while True:
@@ -118,8 +121,9 @@ class HandlerUllaChat(DefaultPageHandler):
                             self.minitel.clear_eol()
                             i = i + 1
                     logger.debug("Messages printed")
+
                 try:
-                    key = self.minitel.wait_form_inputs(0.2)
+                    key = self.minitel.wait_form_inputs(timeout=0.1, move_cursor=cursor_moved)
                     if key == Terminal.ENVOI:
                         HandlerUllaChat.chat_room.send_message({"user": self.user_name,
                                                                 "message": self.minitel.forms[0].text})
@@ -133,6 +137,7 @@ class HandlerUllaChat(DefaultPageHandler):
                         logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
                         HandlerUllaChat.chat_room.remove_client(self)
                         raise UserTerminateSessionError
+                    cursor_moved = False
                 except MinitelTimeoutError:
                     pass
         except DisconnectedError as e:

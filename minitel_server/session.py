@@ -40,9 +40,11 @@ class Session(Thread):
             # self.terminal.wait_connection()
             self.terminal.clear_screen()
             self.terminal.home_cursor()
+
             ''' Loads the root page and create the default context '''
             page = Page.get_page(self.port, None)
             self.context = PageContext(None, None, page)
+            first_page = True
             while True:
                 ''' Get custom page handler '''
                 handler_name = self.context.current_page.get_handler()
@@ -59,6 +61,10 @@ class Session(Thread):
                 handler.before_rendering()
                 ''' Render page '''
                 handler.render()
+                if first_page:
+                    logger.info("Clearing first page garbage data")
+                    self.terminal.read_all()
+                    first_page = False
                 ''' Get new context from the rendered page '''
                 new_context = handler.after_rendering()
                 if new_context is not None:
@@ -72,7 +78,7 @@ class Session(Thread):
             
     @staticmethod
     def full_import(name):
-        ''' Import a module by using the full qualifier '''
+        """ Import a module by using the full qualifier """
         m = __import__(name)
         for n in name.split(".")[1:]:
             m = getattr(m, n)

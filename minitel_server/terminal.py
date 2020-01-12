@@ -158,6 +158,7 @@ class Terminal(object):
         if len(ready_to_read) != 0:
             try:
                 data = self.remove_parity(self.con.recv(1))
+                logger.debug("Read {} from Minitel".format(data))
                 if not data:
                     raise DisconnectedError
             except ConnectionResetError:
@@ -172,6 +173,7 @@ class Terminal(object):
         data = []
         while len(data) < expected:
             data += [self.read(timeout)]
+        logger.debug("Read {} from Minitel".format(data))
         return data
 
     def read_all(self):
@@ -179,12 +181,11 @@ class Terminal(object):
         Reads all bytes in the receipt buffer
         Mainly use to flush
         """
-        data = []
-        while True:
-            d = self.remove_parity(self.con.recv(2048))
-            if not d:
-                return data
-            data += [d]
+        try:
+            while True:
+                self.read(0)
+        except MinitelTimeoutError:
+            pass
 
     def wait_connection(self):
         """
@@ -193,7 +194,7 @@ class Terminal(object):
         logger.debug("Waiting for connection data...")
         try:
             while True:
-                d = self.read(self.CONN_TIMEOUT / 1000)
+                self.read(self.CONN_TIMEOUT / 1000)
         except MinitelTimeoutError:
             pass
 
@@ -280,21 +281,21 @@ class Terminal(object):
         while True:
             data = self.read(timeout)
             if data == self.SEP:
-                sep_key = self.read(timeout)
+                sep_key = self.read()
                 logger.debug("Got SEP key : 0x{0:x}".format(sep_key))
                 if sep_key < 0x41 or sep_key > 0x49:
                     logger.debug("SEP is an acknowledge")
                     continue
                 return True, sep_key - 0x40
             elif data == self.ACK_PROTO:
-                proto = self.read(timeout)
+                proto = self.read()
                 logger.debug("Got protocol acknowledge 0x{0:x}".format(proto))
                 if proto == self.PRO1:
-                    data = self.read_n(1, timeout)
+                    data = self.read_n(1)
                 elif proto == self.PRO2:
-                    data = self.read_n(2, timeout)
+                    data = self.read_n(2)
                 elif proto == self.PRO3:
-                    data = self.read_n(3, timeout)
+                    data = self.read_n(3)
                 else:
                     logger.warning("unsupported protocol ack.")
                     self.read_all()
@@ -302,7 +303,7 @@ class Terminal(object):
                 return False, data
             elif data == Terminal.ACCENT:
                 ''' Accent '''
-                acc_code = self.read(timeout)
+                acc_code = self.read()
                 if acc_code == 0x23:
                     return False, '£'
                 elif acc_code == 0x27:
@@ -536,7 +537,7 @@ class Terminal(object):
         self.forms.clear()
         self.current_form = 0
 
-    def wait_form_inputs(self, timeout=None):
+    def wait_form_inputs(self, timeout=None, move_cursor=True):
         """
         Waits for user inputs to be filled
         """
@@ -545,7 +546,7 @@ class Terminal(object):
 
         self.current_form = 0
         while True:
-            key = self.forms[self.current_form].grab_focus(self, timeout)
+            key = self.forms[self.current_form].grab_focus(self, timeout, move_cursor)
             if key == self.SUITE:
                 self.current_form += 1
                 if self.current_form >= len(self.forms):
@@ -620,22 +621,23 @@ class FormInput(object):
                     terminal.print_repeat(self._placeholder, rem)
             self.initial_draw = False
 
-    def grab_focus(self, terminal, timeout=None):
+    def grab_focus(self, terminal, timeout=None, move_cursor=True):
         """
         Manage this input
         """
-        if self._length > 0:
-            # Move to end of text
-            offset = len(self.text)
-            if offset >= self._length:
-                offset = self._length - 1
-                if offset < 1:
-                    offset = 1
-            terminal.move_cursor(self._locx + offset, self._locy)
-            terminal.text_colour(self._colour)
-            terminal.visible_cursor(True)
-        else:
-            terminal.visible_cursor(False)
+        if move_cursor:
+            if self._length > 0:
+                # Move to end of text
+                offset = len(self.text)
+                if offset >= self._length:
+                    offset = self._length - 1
+                    if offset < 1:
+                        offset = 1
+                terminal.move_cursor(self._locx + offset, self._locy)
+                terminal.text_colour(self._colour)
+                terminal.visible_cursor(True)
+            else:
+                terminal.visible_cursor(False)
         while True:
             sep, key = terminal.wait_input(timeout)
             if sep is True:
