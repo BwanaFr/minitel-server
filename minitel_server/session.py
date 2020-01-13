@@ -36,15 +36,12 @@ class Session(Thread):
     def run(self):
         try:
             logger.debug("Minitel session started")
-            ''' Waits for first -garbage- characters '''
-            # self.terminal.wait_connection()
             self.terminal.clear_screen()
             self.terminal.home_cursor()
 
             ''' Loads the root page and create the default context '''
             page = Page.get_page(self.port, None)
             self.context = PageContext(None, None, page)
-            first_page = True
             while True:
                 ''' Get custom page handler '''
                 handler_name = self.context.current_page.get_handler()
@@ -53,18 +50,14 @@ class Session(Thread):
                     handler = DefaultPageHandler(self.terminal, self.context)
                 else:
                     ''' Import the module handler '''
-                    modulename = self.context.current_page.get_module_name()
-                    module = Session.full_import(modulename)
+                    module_name = self.context.current_page.get_module_name()
+                    module = Session.full_import(module_name)
                     class_ = getattr(module, handler_name)
                     handler = class_(self.terminal, self.context)
                 ''' Call before rendering handler '''
                 handler.before_rendering()
                 ''' Render page '''
                 handler.render()
-                if first_page:
-                    logger.info("Clearing first page garbage data")
-                    self.terminal.read_all()
-                    first_page = False
                 ''' Get new context from the rendered page '''
                 new_context = handler.after_rendering()
                 if new_context is not None:

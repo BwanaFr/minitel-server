@@ -94,6 +94,7 @@ class Terminal(object):
         self.con = con
         self.forms = []
         self.current_form = 0
+        self._first_read = True
 
     @staticmethod
     def add_even_parity(data):
@@ -278,6 +279,14 @@ class Terminal(object):
         """
         Waits for user input
         """
+        # Remove all previously received characters
+        # Real Minitel send some protocol data by it's truncated
+        # by the soft modem. Simply ignore them
+        if self._first_read:
+            logger.info("Clearing first read garbage data")
+            self.read_all()
+            self._first_read = False
+
         while True:
             data = self.read(timeout)
             if data == self.SEP:

@@ -18,8 +18,6 @@ root:
     handlers: [console]
     propagate: no
 
-loggers:
-    Ullapage:
-        level: DEBUG
-    Terminal:
-        level: DEBUG
+#loggers:
+#    Ullapage:
+#        level: DEBUG

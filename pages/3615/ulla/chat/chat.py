@@ -112,10 +112,10 @@ class HandlerUllaChat(DefaultPageHandler):
                     for m in self._messages:
                         if m['type'] == 'message':
                             self.minitel.move_cursor(1, i)
-                            self.minitel.text_colour(Terminal.BLUE)
+                            self.minitel.text_colour(Terminal.MAGENTA)
+                            self.minitel.reverse_video()
                             self.minitel.print_text(m['user'])
-                            self.minitel.text_colour(Terminal.CYAN)
-                            self.minitel.print_text('→')
+                            self.minitel.normal_video()
                             self.minitel.text_colour(Terminal.WHITE)
                             self.minitel.print_text(m['message'])
                             self.minitel.clear_eol()
@@ -123,7 +123,6 @@ class HandlerUllaChat(DefaultPageHandler):
                     logger.debug("Messages printed")
 
                 try:
-                    logger.debug("Cursor moved: {}".format(cursor_moved))
                     key = self.minitel.wait_form_inputs(timeout=0.1, move_cursor=cursor_moved)
                     if key == Terminal.ENVOI:
                         HandlerUllaChat.chat_room.send_message({"user": self.user_name,
@@ -138,9 +137,9 @@ class HandlerUllaChat(DefaultPageHandler):
                         logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
                         HandlerUllaChat.chat_room.remove_client(self)
                         raise UserTerminateSessionError
-                    cursor_moved = False
                 except MinitelTimeoutError:
                     pass
+                cursor_moved = False
         except DisconnectedError as e:
             logger.debug("User {} disconnected".format(self.user_name))
             HandlerUllaChat.chat_room.remove_client(self)

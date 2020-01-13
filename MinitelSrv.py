@@ -8,12 +8,13 @@ import os
 import yaml
 import logging.config
 
-#from MinitelServer.server import MinitelServer 
+# from MinitelServer.server import MinitelServer
 from minitel_server import constant
 from minitel_server.tcp_server import TCPServer
 from minitel_server.terminal import Terminal
 
 logger = logging.getLogger('main')
+
 
 def setup_logging(default_path='logging.yaml', default_level=logging.INFO, env_key='LOG_CFG'):
     """
@@ -29,25 +30,25 @@ def setup_logging(default_path='logging.yaml', default_level=logging.INFO, env_k
             try:
                 config = yaml.safe_load(f.read())
                 logging.config.dictConfig(config)
-#                coloredlogs.install()
+            #                coloredlogs.install()
             except Exception as e:
                 print(e)
                 print('Error in Logging Configuration. Using default configs')
                 logging.basicConfig(level=default_level)
-#                coloredlogs.install(level=default_level)
+    #                coloredlogs.install(level=default_level)
     else:
         logging.basicConfig(level=default_level)
-#        coloredlogs.install(level=default_level)
+        #        coloredlogs.install(level=default_level)
         print('Failed to load configuration file. Using default configs')
 
+
 def main():
-    
     setup_logging()
-    
+
     # Run the server
     ports = []
     for dirName in next(os.walk(constant.PAGES_LOCATION))[1]:
-        logger.info("Searching service in " + dirName)        
+        logger.info("Searching service in " + dirName)
         try:
             ports.append(int(dirName))
         except:
@@ -55,7 +56,7 @@ def main():
     servers = []
     for p in ports:
         srv = TCPServer(p)
-        srv.start() 
+        srv.start()
         servers.append(srv)
 
     for s in servers:
