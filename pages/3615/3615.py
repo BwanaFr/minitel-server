@@ -36,22 +36,25 @@ class Handler3615(PageHandler):
         self.minitel.draw_file(page.get_page_data())
 
     def after_rendering(self):
-        key = self.minitel.wait_form_inputs()
 
-        if key == Terminal.ENVOI:
-            logger.debug("Envoi from {}".format(self.context.current_page.page_folder))
-            nextpage = self.getpage(self.minitel.forms[0].text)
-            if nextpage is not None:
-                return PageContext(self.context, self.minitel.forms, nextpage)
-            else:
-                self.shownotfound()
-        if key == Terminal.GUIDE:
-            logger.debug("Guide from {}".format(self.context.current_page.page_folder))
-            return self.showavailableservice()
-        if key == Terminal.SOMMAIRE:
-            return self.showprice()
-        if key == Terminal.CONNEXION_FIN:
-            raise UserTerminateSessionError
+        while True:
+            self.minitel.forms[0].initial_draw = True
+            key = self.minitel.wait_form_inputs()
+
+            if key == Terminal.ENVOI:
+                logger.debug("Envoi from {}".format(self.context.current_page.page_folder))
+                nextpage = self.getpage(self.minitel.forms[0].text)
+                if nextpage is not None:
+                    return PageContext(self.context, self.minitel.forms, nextpage)
+                else:
+                    self.shownotfound()
+            if key == Terminal.GUIDE:
+                logger.debug("Guide from {}".format(self.context.current_page.page_folder))
+                return self.showavailableservice()
+            if key == Terminal.SOMMAIRE:
+                return self.showprice()
+            if key == Terminal.CONNEXION_FIN:
+                raise UserTerminateSessionError
         return None
 
     def getpage(self, name):

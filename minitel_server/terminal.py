@@ -159,9 +159,9 @@ class Terminal(object):
         if len(ready_to_read) != 0:
             try:
                 data = self.remove_parity(self.con.recv(1))
-                logger.debug("Read {} from Minitel".format(data))
                 if not data:
                     raise DisconnectedError
+                logger.debug("Read 0x{0:x} from Minitel".format(data[0]))
             except ConnectionResetError:
                 raise DisconnectedError
             return data[0]
@@ -173,18 +173,21 @@ class Terminal(object):
         """
         data = []
         while len(data) < expected:
-            data += [self.read(timeout)]
-        logger.debug("Read {} from Minitel".format(data))
+            d = self.read(timeout)
+            data += [d]
+            logger.debug("Read {0:x} from Minitel".format(d))
         return data
 
-    def read_all(self):
+    def read_all(self, timeout=0):
         """
         Reads all bytes in the receipt buffer
         Mainly use to flush
         """
         try:
             while True:
-                self.read(0)
+                d = self.read(timeout)
+                logger.debug("Garbage data 0x{0:x}".format(d))
+                timeout = 0.2
         except MinitelTimeoutError:
             pass
 
@@ -284,7 +287,7 @@ class Terminal(object):
         # by the soft modem. Simply ignore them
         if self._first_read:
             logger.info("Clearing first read garbage data")
-            self.read_all()
+            self.read_all(timeout=5)
             self._first_read = False
 
         while True:
