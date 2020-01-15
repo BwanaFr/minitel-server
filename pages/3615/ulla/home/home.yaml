@@ -4,5 +4,5 @@ forms:
       actions:
         - value: "[0]?[1]"
           page: "ulla.chat"
-        - value: "[0]?[2]"
+        - value: "[0]?[2-7]"
           page: "ulla.404"
