@@ -1,0 +1,6 @@
+forms:
+    - location: [17,1]
+      length : 40
+      actions:
+        - value: ".+"
+          page: "wikipedia.search"

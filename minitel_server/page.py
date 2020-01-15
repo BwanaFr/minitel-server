@@ -91,7 +91,12 @@ class PageContext(object):
     def __init__(self, previous, data, current_page):
         """Previous page before this one"""
         self.previous = previous
-        self.data = data
+        if data is not None and not isinstance(data, dict):
+            self.data = {}
+            if previous is not None and previous.current_page is not None:
+                self.data[previous.current_page.name] = data
+        else:
+            self.data = data
         self.current_page = current_page
 
 
@@ -103,6 +108,7 @@ class PageHandler(object):
     def __init__(self, minitel, context):
         self.minitel = minitel
         self.context = context
+        self.forms = []
 
     def before_rendering(self):
         """
