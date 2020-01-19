@@ -22,7 +22,6 @@ class HandlerUlla(DefaultPageHandler):
         Constructor
         """
         super().__init__(minitel, context)
-        logger.info('in our custom handler')
 
     def after_rendering(self):
         logger.debug('In after_rendering callback')
@@ -32,7 +31,7 @@ class HandlerUlla(DefaultPageHandler):
             logger.debug('Username is {}'.format(self.minitel.forms[0].text))
             data = {"username": self.minitel.forms[0].text}
             next_page = Page.get_page(self.context.current_page.service, "ulla.home")
-            return PageContext(self.context, data, next_page)
+            return PageContext(self, next_page, data)
         if key == Terminal.GUIDE:
             logger.debug("Guide from {}".format(self.context.current_page.fullname))
         if key == Terminal.SOMMAIRE:

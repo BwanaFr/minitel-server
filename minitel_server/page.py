@@ -88,16 +88,32 @@ class PageContext(object):
     Navigation context
     """
 
-    def __init__(self, previous, data, current_page):
-        """Previous page before this one"""
-        self.previous = previous
-        if data is not None and not isinstance(data, dict):
-            self.data = {}
-            if previous is not None and previous.current_page is not None:
-                self.data[previous.current_page.name] = data
+    def __init__(self, current_handler, next_page, custom_data=None):
+        """
+            Constructor
+            :param current_handler: Actual page handler creating this context or None if base service
+            :param next_page: Next page to be rendered
+            :param custom_data: Custom data to be added to the context
+        """
+        if current_handler is not None:
+            self.previous = current_handler.context
+            form_data = {}
+            if current_handler.minitel.forms is not None:
+                for i in range(0, len(current_handler.minitel.forms)):
+                    form_text = current_handler.minitel.forms[i].text
+                    form_data["text_{}".format(i)] = form_text
+            self.data = self.previous.data
+            self.data[self.previous.current_page.name] = form_data
+
+            self.custom_data = self.previous.custom_data
+            if custom_data is not None:
+                self.custom_data[self.previous.current_page.name] = custom_data
         else:
-            self.data = data
-        self.current_page = current_page
+            self.previous = None
+            self.data = {}
+            self.custom_data = {}
+
+        self.current_page = next_page
 
 
 class PageHandler(object):
@@ -163,29 +179,24 @@ class DefaultPageHandler(PageHandler):
             # Wait for zones
             key = self.minitel.wait_form_inputs()
             logger.debug('Got zone SEP key : {}'.format(key))
-            i = 0
-            data = {}
             next_page = None
+            i = 0
             for value in self.forms:
-                # Save forms values in a array
-                zone_text = self.minitel.forms[i].text
-                data["text_{}".format(i)] = zone_text
                 # test if zone match
                 # Check if forms matches regular expression
+                form_text = self.minitel.forms[i].text
                 if 'actions' in value:
                     for action in value['actions']:
                         if 'value' in action:
                             value_pattern = str(action['value'])
-                            if re.match(value_pattern, zone_text, re.RegexFlag.IGNORECASE):
+                            if re.match(value_pattern, form_text, re.RegexFlag.IGNORECASE):
                                 # value match. what to do now?
                                 if 'page' in action:
                                     next_page = Page.get_page(self.context.current_page.service, str(action['page']))
                                     break
                 i = i + 1
                 if next_page is not None:
-                    new_data = self.context.data
-                    new_data[self.context.current_page.name] = data
-                    new_context = PageContext(self.context, new_data, next_page)
+                    new_context = PageContext(self, next_page)
                     break
         else:
             sep, key = self.minitel.wait_input()

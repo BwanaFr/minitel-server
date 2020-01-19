@@ -40,7 +40,7 @@ class HandlerClock(DefaultPageHandler):
                 key = self.minitel.wait_form_inputs(1)
                 if key == Terminal.RETOUR:
                     next_page = Page.get_page(self.context.current_page.service, None)
-                    return PageContext(self.context, self.minitel.forms, next_page)
+                    return PageContext(self, next_page)
                 if key == Terminal.CONNEXION_FIN:
                     logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
                     raise UserTerminateSessionError

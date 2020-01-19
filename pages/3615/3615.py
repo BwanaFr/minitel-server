@@ -45,7 +45,7 @@ class Handler3615(PageHandler):
                 logger.debug("Envoi from {}".format(self.context.current_page.page_folder))
                 nextpage = self.getpage(self.minitel.forms[0].text)
                 if nextpage is not None:
-                    return PageContext(self.context, self.minitel.forms, nextpage)
+                    return PageContext(self, nextpage)
                 else:
                     self.shownotfound()
             if key == Terminal.GUIDE:
@@ -113,7 +113,7 @@ class Handler3615(PageHandler):
                     pageindex = int(self.minitel.forms[0].text)
                     logger.debug('Selected page {:d}/{}'.format(pageindex, pagesnum[pageindex - 1]))
                     nextpage = Page.get_page(self.context.current_page.service, pagesnum[pageindex - 1])
-                    return PageContext(self.context, self.minitel.forms, nextpage)
+                    return PageContext(self, nextpage)
                 except:
                     self.minitel.bell()
                     self.minitel.show_message('Mauvais numéro', 2)

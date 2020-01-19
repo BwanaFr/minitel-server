@@ -72,13 +72,13 @@ class HandlerUllaChat(DefaultPageHandler):
         """
         super().__init__(minitel, context)
         logger.info('HandlerUllaChat: in our custom handler')
+        self._new_message_queue = queue.Queue()
+        self._messages = collections.deque(maxlen=17)
+        self.user_name = self.context.custom_data["ulla"]["username"]
         if not HandlerUllaChat.chat_room:
             HandlerUllaChat.chat_room = HandlerUllaChat.__UllaChatRoom()
             HandlerUllaChat.chat_room.start()
         HandlerUllaChat.chat_room.add_client(self)
-        self._messages = collections.deque(maxlen=17)
-        self.user_name = self.context.data["username"]
-        self._new_message_queue = queue.Queue()
 
     def after_rendering(self):
         logger.debug('HandlerUllaChat: In after_rendering callback')
@@ -106,7 +106,7 @@ class HandlerUllaChat(DefaultPageHandler):
                         else:
                             self.minitel.print_text(
                                 "{} utilisateurs en ligne".format(count))
-                        self.minitel.clear_eol();
+                        self.minitel.clear_eol()
 
                     i = 5
                     for m in self._messages:
@@ -132,7 +132,7 @@ class HandlerUllaChat(DefaultPageHandler):
                     elif key == Terminal.RETOUR:
                         next_page = Page.get_page(self.context.current_page.service, "ulla.home")
                         HandlerUllaChat.chat_room.remove_client(self)
-                        return PageContext(self.context, self.context.previous.data, next_page)
+                        return PageContext(self, next_page)
                     elif key == Terminal.CONNEXION_FIN:
                         logger.debug("Connection/fin from {}".format(self.context.current_page.fullname))
                         HandlerUllaChat.chat_room.remove_client(self)
@@ -144,8 +144,6 @@ class HandlerUllaChat(DefaultPageHandler):
             logger.debug("User {} disconnected".format(self.user_name))
             HandlerUllaChat.chat_room.remove_client(self)
             raise e
-
-        return None
 
     def new_message(self, message):
         if message is not None:

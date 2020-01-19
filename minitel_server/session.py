@@ -41,7 +41,7 @@ class Session(Thread):
 
             ''' Loads the root page and create the default context '''
             page = Page.get_page(self.port, None)
-            self.context = PageContext(None, None, page)
+            self.context = PageContext(None, page)
             while True:
                 ''' Get custom page handler '''
                 handler_name = self.context.current_page.get_handler()

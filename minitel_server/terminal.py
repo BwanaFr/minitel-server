@@ -287,7 +287,11 @@ class Terminal(object):
         # by the soft modem. Simply ignore them
         if self._first_read:
             logger.info("Clearing first read garbage data")
-            self.read_all(timeout=5)
+            try:
+                self.read(0.1)
+                self.read_all(timeout=5)
+            except MinitelTimeoutError:
+                pass
             self._first_read = False
 
         while True:
