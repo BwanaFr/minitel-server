@@ -58,6 +58,7 @@ class Terminal(object):
     CURSOR_DOWN = 0xA  # Move cursor down
     CURSOR_UP = 0xB  # Move cursor up
     CLEAR_SCREEN = 0xC  # Clear screen
+    START_LINE = 0xD  # Move cursor to start of line
     SEMIGRAPHICS_MODE = 0xE  # Semi-graphics mode
     TEXT_MODE = 0xF  # Test mode
     CURSOR_VISIBLE = 0x11  # Visible cursor
@@ -267,6 +268,9 @@ class Terminal(object):
         text = text.replace('↓', '\x19\x2F')
         text = text.replace('̶', '\x60')
         text = text.replace('|', '\x7C')
+        text = text.replace('«', '"')
+        text = text.replace('»', '"')
+        text = text.replace('’', '')
 
         # Caractères accentués inexistants sur Minitel
         text = text.replace('À', 'A').replace('Â', 'A').replace('Ä', 'A')
@@ -511,6 +515,12 @@ class Terminal(object):
         """
         self.write(self.CURSOR_DOWN)
 
+    def move_cursor_start_line(self):
+        """
+        Moves cursor to start of line
+        """
+        self.write(self.START_LINE)
+
     def semigraphics_mode(self):
         """
         Switch to semi-graphics mode
@@ -553,23 +563,29 @@ class Terminal(object):
         self.forms.clear()
         self.current_form = 0
 
-    def wait_form_inputs(self, timeout=None, move_cursor=True):
+    def wait_form_inputs(self, timeout=None, move_cursor=True, force_form=None):
         """
         Waits for user inputs to be filled
         """
-        for f in self.forms:
-            f.prepare(self)
+        if force_form is None:
+            for f in self.forms:
+                f.prepare(self)
 
-        self.current_form = 0
-        while True:
+            self.current_form = 0
+            while True:
+                key = self.forms[self.current_form].grab_focus(self, timeout, move_cursor)
+                if key == self.SUITE:
+                    self.current_form += 1
+                    if self.current_form >= len(self.forms):
+                        self.current_form = 0
+                    logger.debug("Moving to next form input : {}".format(self.current_form))
+                else:
+                    return key
+        else:
+            logger.debug("Using form[{}] only".format(force_form))
+            self.forms[force_form].prepare(self)
             key = self.forms[self.current_form].grab_focus(self, timeout, move_cursor)
-            if key == self.SUITE:
-                self.current_form += 1
-                if self.current_form >= len(self.forms):
-                    self.current_form = 0
-                logger.debug("Moving to next form input : {}".format(self.current_form))
-            else:
-                return key
+            return key
 
     def print_repeat(self, c, count):
         """
