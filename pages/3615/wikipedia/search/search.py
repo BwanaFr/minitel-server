@@ -3,12 +3,9 @@ Created on 15 Jan 2020
 
 @author: mdonze
 """
-from minitel_server.page import DefaultPageHandler, PageContext, \
-    Page
+from minitel_server.page import DefaultPageHandler, PageContext
 import logging
 from minitel_server.terminal import Terminal, FormInput
-from minitel_server.exceptions import UserTerminateSessionError
-import time
 
 logger = logging.getLogger('Wikipedia')
 
@@ -18,6 +15,7 @@ wikipedia_available = True
 try:
     import wikipedia
 except ImportError:
+    wikipedia = None
     logger.warning("wikipedia module not installed.")
     wikipedia_available = False
 
@@ -129,7 +127,6 @@ class Search(DefaultPageHandler):
         # Cut the text to be displayed
         # Do line wrap
         chunks = []
-        i = 0
         start = 0
         logger.debug("Displaying {}".format(text))
         while True:
@@ -217,7 +214,7 @@ class Search(DefaultPageHandler):
                 self.minitel.reverse_video()
                 self.minitel.print_text("{:2}".format(i + 1))
                 self.minitel.normal_video()
-                self.minitel.print_text(" {}".format(articles[i]))
+                self.minitel.print_text(" {}".format(articles[i][:36]))
             self.minitel.clear_eol()
             self.minitel.move_cursor(1, i + 4)
         self.minitel.clear_form_inputs()
@@ -238,4 +235,3 @@ class Search(DefaultPageHandler):
                     self.minitel.bell()
             elif key == Terminal.RETOUR or key == Terminal.SOMMAIRE:
                 return None
-
