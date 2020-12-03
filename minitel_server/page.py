@@ -11,6 +11,7 @@ import re
 from . import constant
 from minitel_server.terminal import Terminal, FormInput
 from minitel_server.exceptions import UserTerminateSessionError
+from minitel_server.configuration import Configuration
 
 logger = logging.getLogger('page')
 
@@ -34,12 +35,12 @@ class Page(object):
         if name is None:
             self.name = str(service)
             self.fullname = ''
-            self.page_folder = os.path.join(constant.PAGES_LOCATION, str(self.service))
+            self.page_folder = os.path.join(Configuration.page_folder, str(self.service))
         else:
             tokens = name.split('.')
             self.fullname = name
             self.name = tokens[len(tokens) - 1]
-            self.page_folder = os.path.join(constant.PAGES_LOCATION, str(self.service))
+            self.page_folder = os.path.join(Configuration.page_folder, str(self.service))
             for x in range(len(tokens)):
                 self.page_folder = os.path.join(self.page_folder, tokens[x])
         logger.debug("Minitel page folder is {}".format(self.page_folder))
@@ -78,9 +79,9 @@ class Page(object):
             return None
         else:
             if len(self.fullname) == 0:
-                return constant.PAGES_LOCATION + '.' + str(self.service) + '.' + self.name
+                return Configuration.PAGE_LOCATION + '.' + str(self.service) + '.' + self.name
             else:
-                return constant.PAGES_LOCATION + '.' + str(self.service) + '.' + self.fullname + '.' + self.name
+                return Configuration.PAGE_LOCATION + '.' + str(self.service) + '.' + self.fullname + '.' + self.name
 
 
 class PageContext(object):

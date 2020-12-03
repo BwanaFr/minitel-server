@@ -14,7 +14,7 @@ handlers:
         formatter: standard
         stream: ext://sys.stdout
 root:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propagate: no
 

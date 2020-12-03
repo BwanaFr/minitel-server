@@ -8,10 +8,9 @@ import os
 import yaml
 import logging.config
 
-# from MinitelServer.server import MinitelServer
 from minitel_server import constant
 from minitel_server.tcp_server import TCPServer
-from minitel_server.terminal import Terminal
+from minitel_server.configuration import Configuration
 
 logger = logging.getLogger('main')
 
@@ -44,10 +43,11 @@ def setup_logging(default_path='logging.yaml', default_level=logging.INFO, env_k
 
 def main():
     setup_logging()
+    Configuration.load_configuration()
 
     # Run the server
     ports = []
-    for dirName in next(os.walk(constant.PAGES_LOCATION))[1]:
+    for dirName in next(os.walk(Configuration.page_folder))[1]:
         logger.info("Searching service in " + dirName)
         try:
             ports.append(int(dirName))
