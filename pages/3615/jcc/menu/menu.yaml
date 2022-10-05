@@ -1,0 +1,10 @@
+forms:
+    - location: [21,22]
+      length : 1
+      actions:
+        - value: "1"
+          page: "jcc.livreor_add"
+        - value: "2"
+          page: "jcc.livreor_consult"
+        - value: "3"
+          page: "jcc.register"

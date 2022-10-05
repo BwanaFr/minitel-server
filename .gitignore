@@ -5,3 +5,4 @@
 minitel_server/__pycache__
 venv
 .idea
+*.db

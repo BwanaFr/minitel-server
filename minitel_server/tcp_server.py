@@ -23,7 +23,7 @@ class TCPServer(Thread):
         Constructor
         '''
         Thread.__init__(self)
-        self.port = port;
+        self.port = port
 
     def run(self):
         logger.info("Listening for connection on port {}".format(self.port))

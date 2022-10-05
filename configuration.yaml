@@ -1,2 +1,2 @@
 #You can specify where pages are stored
-#pages_folder: /tmp/minitel
+pages_folder: .

@@ -60,7 +60,7 @@ def main():
         servers.append(srv)
 
     for s in servers:
-        s.join
+        s.join()
 
 
 if __name__ == '__main__':

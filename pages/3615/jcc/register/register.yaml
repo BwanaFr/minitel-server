@@ -1,0 +1,8 @@
+handler: Register
+forms:
+    - location: [9,14]
+      length : 26
+    - location: [11,11]
+      length : 29
+    - location: [13,14]
+      length : 26

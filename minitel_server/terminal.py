@@ -563,7 +563,7 @@ class Terminal(object):
         self.forms.clear()
         self.current_form = 0
 
-    def wait_form_inputs(self, timeout=None, move_cursor=True, force_form=None):
+    def wait_form_inputs(self, timeout=None, move_cursor=True, force_form=None, current_form=0):
         """
         Waits for user inputs to be filled
         """
@@ -571,7 +571,7 @@ class Terminal(object):
             for f in self.forms:
                 f.prepare(self)
 
-            self.current_form = 0
+            self.current_form = current_form
             while True:
                 key = self.forms[self.current_form].grab_focus(self, timeout, move_cursor)
                 if key == self.SUITE:
@@ -598,16 +598,20 @@ class Terminal(object):
             for _i in range(1, count):
                 self.write(c)
 
-    def show_message(self, text, duration=2):
+    def show_message(self, text, duration=2, x=1, y=0, reverse=False):
         """
         Displays a notification message on top left of screen
         User must move back the cursor to continue (and put it visible)
         """
         self.visible_cursor(False)
-        self.move_cursor(1, 0)
+        self.move_cursor(x, y)
+        if reverse:
+            self.reverse_video()
         self.print_text(text)
         time.sleep(duration)
-        self.move_cursor(1, 0)
+        self.move_cursor(x, y)
+        if reverse:
+            self.normal_video()
         self.print_repeat(' ', len(text))
 
 
