@@ -8,7 +8,7 @@ import logging
 from select import select
 from socket import socket
 
-from minitel_server.constant import SIMULATE_12000_BPS
+from minitel_server.constant import SIMULATE_12000_BPS, PROCESS_PARITY
 from minitel_server.exceptions import DisconnectedError, MinitelTimeoutError
 import time
 
@@ -136,7 +136,8 @@ class Terminal(object):
                 bytes_data += bytearray(d)
         logger.debug("Writing {} to Minitel".format(bytes_data))
         try:
-            bytes_data = self.add_even_parity(bytes_data)
+            if PROCESS_PARITY:
+                bytes_data = self.add_even_parity(bytes_data)
             if SIMULATE_12000_BPS:
                 for b in bytes_data:
                     self.con.send(b.to_bytes(1, 'big'))
@@ -159,7 +160,10 @@ class Terminal(object):
         data = None
         if len(ready_to_read) != 0:
             try:
-                data = self.remove_parity(self.con.recv(1))
+                if PROCESS_PARITY:
+                    data = self.remove_parity(self.con.recv(1))
+                else:
+                    data = self.con.recv(1)
                 if not data:
                     raise DisconnectedError
                 logger.debug("Read 0x{0:x} from Minitel".format(data[0]))
